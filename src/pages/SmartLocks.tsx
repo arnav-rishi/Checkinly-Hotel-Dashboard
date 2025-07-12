@@ -141,9 +141,9 @@ export const SmartLocks = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Levels</SelectItem>
-              <SelectItem value="high">High (>50%)</SelectItem>
+              <SelectItem value="high">High (50%+)</SelectItem>
               <SelectItem value="medium">Medium (20-50%)</SelectItem>
-              <SelectItem value="low">Low (<20%)</SelectItem>
+              <SelectItem value="low">Low (20% or less)</SelectItem>
             </SelectContent>
           </Select>
           
