@@ -7,8 +7,7 @@ import {
   Bed, 
   Users, 
   CreditCard, 
-  Shield, 
-  Bell,
+  KeyRound, 
   Settings 
 } from 'lucide-react';
 
@@ -19,9 +18,8 @@ const navigation = [
   { name: 'Rooms', href: '/rooms', icon: Bed },
   { name: 'Guests', href: '/guests', icon: Users },
   { name: 'Payments', href: '/payments', icon: CreditCard },
-  { name: 'Access Control', href: '/access-control', icon: Shield },
-  { name: 'Subscriptions', href: '/subscriptions', icon: Bell },
-  { name: 'Security', href: '/security', icon: Shield },
+  { name: 'Access Control', href: '/access-control', icon: KeyRound },
+  { name: 'Smart Locks', href: '/smart-locks', icon: KeyRound },
 ];
 
 export const Sidebar = () => {
