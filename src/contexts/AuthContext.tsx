@@ -1,7 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
+import { toast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: User | null;
@@ -34,34 +36,76 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', error);
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+      } catch (error) {
+        console.error('Error in getSession:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    getInitialSession();
+
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
+
+        if (event === 'SIGNED_IN') {
+          toast({
+            title: 'Welcome!',
+            description: 'You have been successfully logged in.',
+          });
+        } else if (event === 'SIGNED_OUT') {
+          toast({
+            title: 'Goodbye!',
+            description: 'You have been logged out.',
+          });
+        }
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
+        // Navigation will be handled by the auth state change listener
+        console.log('Login successful');
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast({
+        title: 'Login failed',
+        description: error.message || 'Invalid email or password. Please try again.',
+        variant: 'destructive'
+      });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +116,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
       
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -80,7 +124,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
+        toast({
+          title: 'Account created!',
+          description: 'Please check your email to verify your account before signing in.',
+        });
+      }
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      toast({
+        title: 'Sign up failed',
+        description: error.message || 'Failed to create account. Please try again.',
+        variant: 'destructive'
+      });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -90,8 +151,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      navigate('/login');
+      if (error) {
+        throw error;
+      }
+      navigate('/login', { replace: true });
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      toast({
+        title: 'Logout failed',
+        description: error.message || 'Failed to logout. Please try again.',
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +174,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     signUp,
     logout,
-    isAuthenticated: !!user
+    isAuthenticated: !!user && !!session
   };
 
   return (

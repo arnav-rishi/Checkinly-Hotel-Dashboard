@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -14,9 +15,11 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [signUpLoading, setSignUpLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [signUpErrors, setSignUpErrors] = useState<{ email?: string; password?: string }>({});
-  const { login, signUp, isLoading, isAuthenticated } = useAuth();
+  const { login, signUp, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -72,18 +75,14 @@ export const Login: React.FC = () => {
       return;
     }
 
+    setLoginLoading(true);
     try {
       await login(email, password);
-      toast({
-        title: 'Welcome back!',
-        description: 'You have been successfully logged in.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Login failed',
-        description: error.message || 'Invalid email or password. Please try again.',
-        variant: 'destructive'
-      });
+      // Navigation will be handled by the auth state change
+    } catch (error) {
+      // Error handling is done in the auth context
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -94,18 +93,13 @@ export const Login: React.FC = () => {
       return;
     }
 
+    setSignUpLoading(true);
     try {
       await signUp(signUpEmail, signUpPassword);
-      toast({
-        title: 'Account created!',
-        description: 'Please check your email to verify your account.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Sign up failed',
-        description: error.message || 'Failed to create account. Please try again.',
-        variant: 'destructive'
-      });
+    } catch (error) {
+      // Error handling is done in the auth context
+    } finally {
+      setSignUpLoading(false);
     }
   };
 
@@ -140,6 +134,7 @@ export const Login: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     aria-describedby={errors.email ? "email-error" : undefined}
                     className={errors.email ? "border-destructive" : ""}
+                    disabled={loginLoading}
                   />
                   {errors.email && (
                     <p id="email-error" className="text-sm text-destructive">
@@ -158,6 +153,7 @@ export const Login: React.FC = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     aria-describedby={errors.password ? "password-error" : undefined}
                     className={errors.password ? "border-destructive" : ""}
+                    disabled={loginLoading}
                   />
                   {errors.password && (
                     <p id="password-error" className="text-sm text-destructive">
@@ -169,10 +165,10 @@ export const Login: React.FC = () => {
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={isLoading}
+                  disabled={loginLoading}
                 >
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Sign In
+                  {loginLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {loginLoading ? 'Signing In...' : 'Sign In'}
                 </Button>
               </form>
             </TabsContent>
@@ -189,6 +185,7 @@ export const Login: React.FC = () => {
                     onChange={(e) => setSignUpEmail(e.target.value)}
                     aria-describedby={signUpErrors.email ? "signup-email-error" : undefined}
                     className={signUpErrors.email ? "border-destructive" : ""}
+                    disabled={signUpLoading}
                   />
                   {signUpErrors.email && (
                     <p id="signup-email-error" className="text-sm text-destructive">
@@ -207,6 +204,7 @@ export const Login: React.FC = () => {
                     onChange={(e) => setSignUpPassword(e.target.value)}
                     aria-describedby={signUpErrors.password ? "signup-password-error" : undefined}
                     className={signUpErrors.password ? "border-destructive" : ""}
+                    disabled={signUpLoading}
                   />
                   {signUpErrors.password && (
                     <p id="signup-password-error" className="text-sm text-destructive">
@@ -218,10 +216,10 @@ export const Login: React.FC = () => {
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={isLoading}
+                  disabled={signUpLoading}
                 >
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create Account
+                  {signUpLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {signUpLoading ? 'Creating Account...' : 'Create Account'}
                 </Button>
               </form>
             </TabsContent>
