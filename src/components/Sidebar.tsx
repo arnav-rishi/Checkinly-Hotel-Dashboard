@@ -44,12 +44,12 @@ export const Sidebar = () => {
         <div className="flex items-center space-x-3">
           <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center">
             <span className="text-sm font-medium text-primary-foreground">
-              {user?.name?.charAt(0) || 'U'}
+              {user?.email?.charAt(0).toUpperCase() || 'U'}
             </span>
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
-              {user?.name || 'User'}
+              {user?.email?.split('@')[0] || 'User'}
             </p>
             <p className="text-xs text-muted-foreground truncate">
               {user?.email}

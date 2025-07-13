@@ -15,7 +15,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 
 export const Header = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
   // Mock notifications - replace with real data
@@ -71,11 +71,11 @@ export const Header = () => {
             >
               <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center">
                 <span className="text-sm font-medium text-primary-foreground">
-                  {user?.name?.charAt(0) || 'U'}
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
               <span className="hidden sm:block text-sm font-medium">
-                {user?.name || 'User'}
+                {user?.email?.split('@')[0] || 'User'}
               </span>
               <ChevronDown className="h-4 w-4" />
             </Button>
@@ -83,7 +83,7 @@ export const Header = () => {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col">
-                <span className="font-medium">{user?.name || 'User'}</span>
+                <span className="font-medium">{user?.email?.split('@')[0] || 'User'}</span>
                 <span className="text-xs text-muted-foreground font-normal">
                   {user?.email}
                 </span>
@@ -97,6 +97,11 @@ export const Header = () => {
             <DropdownMenuItem>
               <Bell className="mr-2 h-4 w-4" />
               Notifications
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={logout}>
+              <Settings className="mr-2 h-4 w-4" />
+              Logout
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

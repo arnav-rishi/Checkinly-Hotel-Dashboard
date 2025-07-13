@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, Loader2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -11,14 +12,24 @@ import { toast } from '@/hooks/use-toast';
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [signUpEmail, setSignUpEmail] = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  const { login, isLoading } = useAuth();
+  const [signUpErrors, setSignUpErrors] = useState<{ email?: string; password?: string }>({});
+  const { login, signUp, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/';
 
-  const validateForm = () => {
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, from]);
+
+  const validateLoginForm = () => {
     const newErrors: { email?: string; password?: string } = {};
 
     if (!email) {
@@ -29,18 +40,35 @@ export const Login: React.FC = () => {
 
     if (!password) {
       newErrors.password = 'Password is required';
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const validateSignUpForm = () => {
+    const newErrors: { email?: string; password?: string } = {};
+
+    if (!signUpEmail) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(signUpEmail)) {
+      newErrors.email = 'Email is invalid';
+    }
+
+    if (!signUpPassword) {
+      newErrors.password = 'Password is required';
+    } else if (signUpPassword.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    setSignUpErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    if (!validateLoginForm()) {
       return;
     }
 
@@ -50,11 +78,32 @@ export const Login: React.FC = () => {
         title: 'Welcome back!',
         description: 'You have been successfully logged in.',
       });
-      navigate(from, { replace: true });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Login failed',
-        description: 'Invalid email or password. Please try again.',
+        description: error.message || 'Invalid email or password. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateSignUpForm()) {
+      return;
+    }
+
+    try {
+      await signUp(signUpEmail, signUpPassword);
+      toast({
+        title: 'Account created!',
+        description: 'Please check your email to verify your account.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Sign up failed',
+        description: error.message || 'Failed to create account. Please try again.',
         variant: 'destructive'
       });
     }
@@ -69,62 +118,114 @@ export const Login: React.FC = () => {
           </div>
           <CardTitle className="text-2xl">Hotel Management</CardTitle>
           <CardDescription>
-            Sign in to access your hotel dashboard
+            Access your hotel dashboard
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@hotel.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                aria-describedby={errors.email ? "email-error" : undefined}
-                className={errors.email ? "border-destructive" : ""}
-              />
-              {errors.email && (
-                <p id="email-error" className="text-sm text-destructive">
-                  {errors.email}
-                </p>
-              )}
-            </div>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Sign In</TabsTrigger>
+              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="login">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    aria-describedby={errors.email ? "email-error" : undefined}
+                    className={errors.email ? "border-destructive" : ""}
+                  />
+                  {errors.email && (
+                    <p id="email-error" className="text-sm text-destructive">
+                      {errors.email}
+                    </p>
+                  )}
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                aria-describedby={errors.password ? "password-error" : undefined}
-                className={errors.password ? "border-destructive" : ""}
-              />
-              {errors.password && (
-                <p id="password-error" className="text-sm text-destructive">
-                  {errors.password}
-                </p>
-              )}
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    aria-describedby={errors.password ? "password-error" : undefined}
+                    className={errors.password ? "border-destructive" : ""}
+                  />
+                  {errors.password && (
+                    <p id="password-error" className="text-sm text-destructive">
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading}
-            >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Sign In
-            </Button>
-          </form>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading}
+                >
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Sign In
+                </Button>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="signup">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={signUpEmail}
+                    onChange={(e) => setSignUpEmail(e.target.value)}
+                    aria-describedby={signUpErrors.email ? "signup-email-error" : undefined}
+                    className={signUpErrors.email ? "border-destructive" : ""}
+                  />
+                  {signUpErrors.email && (
+                    <p id="signup-email-error" className="text-sm text-destructive">
+                      {signUpErrors.email}
+                    </p>
+                  )}
+                </div>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Demo credentials:</p>
-            <p>Email: admin@hotel.com</p>
-            <p>Password: password</p>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Password</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    placeholder="Enter your password (min. 6 characters)"
+                    value={signUpPassword}
+                    onChange={(e) => setSignUpPassword(e.target.value)}
+                    aria-describedby={signUpErrors.password ? "signup-password-error" : undefined}
+                    className={signUpErrors.password ? "border-destructive" : ""}
+                  />
+                  {signUpErrors.password && (
+                    <p id="signup-password-error" className="text-sm text-destructive">
+                      {signUpErrors.password}
+                    </p>
+                  )}
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading}
+                >
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Create Account
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
