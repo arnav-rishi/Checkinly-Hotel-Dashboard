@@ -59,7 +59,7 @@ export const SmartLocks = () => {
         .from('smart_locks')
         .select(`
           *,
-          room:rooms(room_number, room_type)
+          room!inner(room_number, room_type)
         `)
         .order('room.room_number');
       
