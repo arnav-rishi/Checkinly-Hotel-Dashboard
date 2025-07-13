@@ -15,13 +15,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
 const navigation = [
-  { name: 'Overview', href: '/', icon: BarChart3 },
+  { name: 'Dashboard', href: '/', icon: BarChart3 },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Hotels', href: '/hotels', icon: Building2 },
   { name: 'Rooms', href: '/rooms', icon: Bed },
   { name: 'Guests', href: '/guests', icon: Users },
   { name: 'Payments', href: '/payments', icon: CreditCard },
-  { name: 'Access Control', href: '/access-control', icon: KeyRound },
   { name: 'Smart Locks', href: '/smart-locks', icon: KeyRound },
 ];
 

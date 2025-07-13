@@ -1,101 +1,149 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Download, DollarSign, CreditCard, Receipt } from 'lucide-react';
+import { Search, Filter, Download, DollarSign, CreditCard, Receipt, TrendingUp } from 'lucide-react';
+import { useApi } from '@/hooks/useApi';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Payment {
+  id: string;
+  amount: number;
+  payment_method: string;
+  payment_status: string;
+  transaction_id: string | null;
+  paid_at: string | null;
+  created_at: string;
+  booking: {
+    id: string;
+    guest: {
+      first_name: string;
+      last_name: string;
+    };
+    room: {
+      room_number: string;
+    };
+  };
+}
+
+interface PaymentStats {
+  totalRevenue: number;
+  pendingPayments: number;
+  failedTransactions: number;
+  successRate: number;
+}
 
 export const Payments = () => {
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [methodFilter, setMethodFilter] = useState('all');
+  const [stats, setStats] = useState<PaymentStats>({
+    totalRevenue: 0,
+    pendingPayments: 0,
+    failedTransactions: 0,
+    successRate: 0
+  });
 
-  const paymentStats = [
-    { title: 'Total Revenue', amount: '$124,892', change: '+12.5%', color: 'text-green-600' },
-    { title: 'Pending Payments', amount: '$8,450', change: '+2.1%', color: 'text-yellow-600' },
-    { title: 'Failed Transactions', amount: '$1,290', change: '-5.2%', color: 'text-red-600' },
-    { title: 'Successful Rate', amount: '96.8%', change: '+1.1%', color: 'text-blue-600' }
-  ];
+  const { execute: fetchPayments, loading: fetchLoading } = useApi();
 
-  const recentTransactions = [
-    {
-      id: '#10234',
-      guest: 'Alice Johnson',
-      room: '305A',
-      amount: '$450.00',
-      status: 'completed',
-      method: 'Credit Card',
-      date: '2024-01-15 14:32',
-      description: 'Room booking payment'
-    },
-    {
-      id: '#10235',
-      guest: 'Bob Smith',
-      room: '210B',
-      amount: '$320.00',
-      status: 'pending',
-      method: 'Bank Transfer',
-      date: '2024-01-15 13:45',
-      description: 'Room booking payment'
-    },
-    {
-      id: '#10236',
-      guest: 'Carol Davis',
-      room: '156C',
-      amount: '$680.00',
-      status: 'completed',
-      method: 'Credit Card',
-      date: '2024-01-15 12:20',
-      description: 'Suite booking payment'
-    },
-    {
-      id: '#10237',
-      guest: 'David Wilson',
-      room: '402A',
-      amount: '$290.00',
-      status: 'failed',
-      method: 'Credit Card',
-      date: '2024-01-15 11:15',
-      description: 'Room booking payment'
-    },
-    {
-      id: '#10238',
-      guest: 'Emma Brown',
-      room: '118B',
-      amount: '$550.00',
-      status: 'completed',
-      method: 'PayPal',
-      date: '2024-01-15 10:30',
-      description: 'Deluxe room payment'
+  useEffect(() => {
+    loadPayments();
+  }, []);
+
+  const loadPayments = async () => {
+    const result = await fetchPayments(async () => {
+      const { data, error } = await supabase
+        .from('payments')
+        .select(`
+          *,
+          booking:bookings(
+            id,
+            guest:guests(first_name, last_name),
+            room:rooms(room_number)
+          )
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    });
+
+    if (result) {
+      setPayments(result);
+      calculateStats(result);
     }
-  ];
+  };
+
+  const calculateStats = (paymentsData: Payment[]) => {
+    const totalRevenue = paymentsData
+      .filter(p => p.payment_status === 'completed')
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+    
+    const pendingPayments = paymentsData
+      .filter(p => p.payment_status === 'pending')
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+    
+    const failedTransactions = paymentsData
+      .filter(p => p.payment_status === 'failed')
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+    
+    const completedCount = paymentsData.filter(p => p.payment_status === 'completed').length;
+    const successRate = paymentsData.length > 0 ? (completedCount / paymentsData.length) * 100 : 0;
+
+    setStats({
+      totalRevenue,
+      pendingPayments,
+      failedTransactions,
+      successRate
+    });
+  };
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
       completed: 'bg-green-100 text-green-800',
       pending: 'bg-yellow-100 text-yellow-800',
-      failed: 'bg-red-100 text-red-800'
+      failed: 'bg-red-100 text-red-800',
+      refunded: 'bg-gray-100 text-gray-800'
     };
     return statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800';
   };
 
   const getPaymentMethodIcon = (method: string) => {
-    switch (method) {
-      case 'Credit Card':
+    switch (method.toLowerCase()) {
+      case 'credit card':
         return <CreditCard className="w-4 h-4" />;
-      case 'PayPal':
+      case 'paypal':
         return <DollarSign className="w-4 h-4" />;
       default:
         return <Receipt className="w-4 h-4" />;
     }
   };
 
+  const filteredPayments = payments.filter(payment => {
+    const guestName = `${payment.booking?.guest?.first_name} ${payment.booking?.guest?.last_name}`.toLowerCase();
+    const roomNumber = payment.booking?.room?.room_number?.toLowerCase() || '';
+    const transactionId = payment.transaction_id?.toLowerCase() || '';
+    
+    const matchesSearch = guestName.includes(searchTerm.toLowerCase()) ||
+                         roomNumber.includes(searchTerm.toLowerCase()) ||
+                         transactionId.includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || payment.payment_status === statusFilter;
+    const matchesMethod = methodFilter === 'all' || payment.payment_method.toLowerCase().includes(methodFilter.toLowerCase());
+    
+    return matchesSearch && matchesStatus && matchesMethod;
+  });
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Payment Management</h1>
-          <p className="text-gray-600 mt-1">Track and manage all payment transactions</p>
+          <h1 className="text-3xl font-bold text-foreground">Payment Management</h1>
+          <p className="text-muted-foreground mt-1">Track and manage all payment transactions</p>
         </div>
         <Button className="flex items-center gap-2">
           <Download className="w-4 h-4" />
@@ -105,22 +153,65 @@ export const Payments = () => {
 
       {/* Payment Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {paymentStats.map((stat) => (
-          <Card key={stat.title}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.amount}</p>
-                  <p className={`text-sm ${stat.color} mt-1`}>{stat.change}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <DollarSign className="w-6 h-6 text-blue-600" />
-                </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Total Revenue</p>
+                <p className="text-2xl font-bold text-foreground">${stats.totalRevenue.toLocaleString()}</p>
+                <p className="text-sm text-green-600 mt-1">+12.5%</p>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Pending Payments</p>
+                <p className="text-2xl font-bold text-foreground">${stats.pendingPayments.toLocaleString()}</p>
+                <p className="text-sm text-yellow-600 mt-1">+2.1%</p>
+              </div>
+              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-yellow-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Failed Transactions</p>
+                <p className="text-2xl font-bold text-foreground">${stats.failedTransactions.toLocaleString()}</p>
+                <p className="text-sm text-red-600 mt-1">-5.2%</p>
+              </div>
+              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <Receipt className="w-6 h-6 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Success Rate</p>
+                <p className="text-2xl font-bold text-foreground">{stats.successRate.toFixed(1)}%</p>
+                <p className="text-sm text-green-600 mt-1">+1.1%</p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <CreditCard className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search and Filters */}
@@ -131,18 +222,17 @@ export const Payments = () => {
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
                 placeholder="Search transactions..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="pl-10"
               />
             </div>
             
             <div className="flex gap-2">
-              <Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -151,18 +241,19 @@ export const Payments = () => {
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="refunded">Refunded</SelectItem>
                 </SelectContent>
               </Select>
               
-              <Select>
+              <Select value={methodFilter} onValueChange={setMethodFilter}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Payment Method" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Methods</SelectItem>
-                  <SelectItem value="credit-card">Credit Card</SelectItem>
+                  <SelectItem value="credit">Credit Card</SelectItem>
                   <SelectItem value="paypal">PayPal</SelectItem>
-                  <SelectItem value="bank-transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="bank">Bank Transfer</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -174,54 +265,68 @@ export const Payments = () => {
           </div>
 
           {/* Transactions Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Transaction ID</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Guest</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Room</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Amount</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Method</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Date</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentTransactions.map((transaction) => (
-                  <tr key={transaction.id} className="border-b hover:bg-gray-50">
-                    <td className="py-4 px-4 font-mono text-sm">{transaction.id}</td>
-                    <td className="py-4 px-4">
-                      <div>
-                        <p className="font-medium">{transaction.guest}</p>
-                        <p className="text-sm text-gray-500">{transaction.description}</p>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 font-medium">{transaction.room}</td>
-                    <td className="py-4 px-4 font-semibold">{transaction.amount}</td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-2">
-                        {getPaymentMethodIcon(transaction.method)}
-                        <span className="text-sm">{transaction.method}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <Badge className={getStatusBadge(transaction.status)}>
-                        {transaction.status}
-                      </Badge>
-                    </td>
-                    <td className="py-4 px-4 text-sm text-gray-600">{transaction.date}</td>
-                    <td className="py-4 px-4">
-                      <Button variant="ghost" size="sm">
-                        View Details
-                      </Button>
-                    </td>
+          {fetchLoading ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Transaction ID</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Guest</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Room</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Amount</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Method</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Date</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredPayments.map((payment) => (
+                    <tr key={payment.id} className="border-b hover:bg-muted/50">
+                      <td className="py-4 px-4 font-mono text-sm">
+                        {payment.transaction_id || payment.id.slice(0, 8)}
+                      </td>
+                      <td className="py-4 px-4">
+                        <div>
+                          <p className="font-medium">
+                            {payment.booking?.guest?.first_name} {payment.booking?.guest?.last_name}
+                          </p>
+                          <p className="text-sm text-muted-foreground">Room booking payment</p>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 font-medium">
+                        {payment.booking?.room?.room_number || 'N/A'}
+                      </td>
+                      <td className="py-4 px-4 font-semibold">${payment.amount}</td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-2">
+                          {getPaymentMethodIcon(payment.payment_method)}
+                          <span className="text-sm">{payment.payment_method}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <Badge className={getStatusBadge(payment.payment_status)}>
+                          {payment.payment_status}
+                        </Badge>
+                      </td>
+                      <td className="py-4 px-4 text-sm text-muted-foreground">
+                        {new Date(payment.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="py-4 px-4">
+                        <Button variant="ghost" size="sm">
+                          View Details
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

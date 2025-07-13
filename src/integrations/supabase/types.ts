@@ -14,7 +14,235 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          check_in_date: string
+          check_out_date: string
+          created_at: string
+          guest_id: string
+          id: string
+          room_id: string
+          special_requests: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          check_in_date: string
+          check_out_date: string
+          created_at?: string
+          guest_id: string
+          id?: string
+          room_id: string
+          special_requests?: string | null
+          status?: string
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          check_in_date?: string
+          check_out_date?: string
+          created_at?: string
+          guest_id?: string
+          id?: string
+          room_id?: string
+          special_requests?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guests: {
+        Row: {
+          address: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          date_of_birth: string | null
+          email: string
+          first_name: string
+          id: string
+          id_number: string | null
+          id_type: string | null
+          last_name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email: string
+          first_name: string
+          id?: string
+          id_number?: string | null
+          id_type?: string | null
+          last_name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string
+          first_name?: string
+          id?: string
+          id_number?: string | null
+          id_type?: string | null
+          last_name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          booking_id: string
+          created_at: string
+          id: string
+          paid_at: string | null
+          payment_method: string
+          payment_status: string
+          transaction_id: string | null
+        }
+        Insert: {
+          amount: number
+          booking_id: string
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          payment_method: string
+          payment_status?: string
+          transaction_id?: string | null
+        }
+        Update: {
+          amount?: number
+          booking_id?: string
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          payment_method?: string
+          payment_status?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          amenities: string[] | null
+          capacity: number
+          created_at: string
+          floor: number
+          id: string
+          price_per_night: number
+          room_number: string
+          room_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amenities?: string[] | null
+          capacity?: number
+          created_at?: string
+          floor: number
+          id?: string
+          price_per_night: number
+          room_number: string
+          room_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amenities?: string[] | null
+          capacity?: number
+          created_at?: string
+          floor?: number
+          id?: string
+          price_per_night?: number
+          room_number?: string
+          room_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      smart_locks: {
+        Row: {
+          battery_level: number | null
+          created_at: string
+          error_message: string | null
+          id: string
+          last_heartbeat: string | null
+          lock_id: string
+          room_id: string
+          signal_strength: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          battery_level?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_heartbeat?: string | null
+          lock_id: string
+          room_id: string
+          signal_strength?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          battery_level?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_heartbeat?: string | null
+          lock_id?: string
+          room_id?: string
+          signal_strength?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_locks_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
