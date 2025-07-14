@@ -13,6 +13,7 @@ import {
 } from './ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationPanel } from './NotificationPanel';
+import { ThemeToggle } from './ThemeToggle';
 
 export const Header = () => {
   const { user, logout } = useAuth();
@@ -40,6 +41,9 @@ export const Header = () => {
       </div>
       
       <div className="flex items-center space-x-4">
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
         {/* Notifications */}
         <NotificationPanel />
 

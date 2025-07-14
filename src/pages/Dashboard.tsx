@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RoomStatusCard } from '@/components/RoomStatusCard';
+import { RevenueChart } from '@/components/RevenueChart';
 import { useApi } from '@/hooks/useApi';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Users, CreditCard, KeyRound, TrendingUp } from 'lucide-react';
+import { Building2, Users, CreditCard, KeyRound, TrendingUp, BarChart3 } from 'lucide-react';
 
 interface RoomStatus {
   status: string;
@@ -188,6 +189,20 @@ export const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Revenue Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5" />
+            Revenue Trends (Last 7 Days)
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">Daily revenue from completed payments</p>
+        </CardHeader>
+        <CardContent>
+          <RevenueChart />
+        </CardContent>
+      </Card>
 
       {/* Room Status */}
       <Card>

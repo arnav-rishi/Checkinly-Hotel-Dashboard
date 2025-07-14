@@ -2,7 +2,10 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp, TrendingDown, DollarSign, Users, Home, CalendarDays, BarChart3 } from 'lucide-react';
+import { RevenueChart } from '@/components/RevenueChart';
+import { BookingCalendar } from '@/components/BookingCalendar';
 
 export const Analytics = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('7 Days');
@@ -79,8 +82,8 @@ export const Analytics = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-        <p className="text-gray-600 mt-1">Revenue analytics and performance insights</p>
+        <h1 className="text-3xl font-bold text-foreground">Analytics Dashboard</h1>
+        <p className="text-muted-foreground mt-1">Revenue analytics and performance insights</p>
       </div>
 
       {/* KPI Cards */}
@@ -90,8 +93,8 @@ export const Analytics = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">{kpi.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{kpi.value}</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">{kpi.title}</p>
+                  <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
                   <div className="flex items-center mt-2">
                     {kpi.trend === 'up' ? (
                       <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
@@ -110,103 +113,111 @@ export const Analytics = () => {
         ))}
       </div>
 
-      {/* Revenue Analytics Chart */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" />
-              Revenue Analytics
-            </CardTitle>
-            <div className="flex gap-2">
-              {['7 Days', '30 Days', '90 Days'].map((period) => (
-                <Button
-                  key={period}
-                  variant={selectedPeriod === period ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectedPeriod(period)}
-                >
-                  {period}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <BarChart3 className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-              <p className="text-gray-600">Revenue chart visualization</p>
-              <p className="text-sm text-gray-500">Interactive charts would be integrated here</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="charts" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="charts">Charts & Analytics</TabsTrigger>
+          <TabsTrigger value="calendar">Booking Calendar</TabsTrigger>
+        </TabsList>
 
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Recent Activity</CardTitle>
-              <Button variant="ghost" size="sm" className="text-blue-600">
-                View All
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                  <div className="text-2xl">{activity.icon}</div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{activity.text}</p>
-                    <p className="text-xs text-gray-500">{activity.time}</p>
-                  </div>
-                  <div className={`w-2 h-2 rounded-full ${
-                    activity.status === 'success' ? 'bg-green-500' : 
-                    activity.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
-                  }`} />
+        <TabsContent value="charts" className="space-y-6">
+          {/* Revenue Analytics Chart */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Revenue Analytics
+                </CardTitle>
+                <div className="flex gap-2">
+                  {['7 Days', '30 Days', '90 Days'].map((period) => (
+                    <Button
+                      key={period}
+                      variant={selectedPeriod === period ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setSelectedPeriod(period)}
+                    >
+                      {period}
+                    </Button>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <RevenueChart />
+            </CardContent>
+          </Card>
 
-        {/* Payment Overview */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Payment Overview</CardTitle>
-              <Button variant="ghost" size="sm" className="text-blue-600">
-                View All Payments
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {paymentOverview.map((payment, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <DollarSign className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{payment.period}</p>
-                      <p className="text-sm text-gray-500">Revenue</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-gray-900">{payment.amount}</p>
-                    <p className="text-sm text-green-600">{payment.change}</p>
-                  </div>
+          {/* Bottom Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Recent Activity */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Recent Activity</CardTitle>
+                  <Button variant="ghost" size="sm" className="text-primary">
+                    View All
+                  </Button>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentActivity.map((activity, index) => (
+                    <div key={index} className="flex items-center space-x-3">
+                      <div className="text-2xl">{activity.icon}</div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{activity.text}</p>
+                        <p className="text-xs text-muted-foreground">{activity.time}</p>
+                      </div>
+                      <div className={`w-2 h-2 rounded-full ${
+                        activity.status === 'success' ? 'bg-green-500' : 
+                        activity.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                      }`} />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Payment Overview */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Payment Overview</CardTitle>
+                  <Button variant="ghost" size="sm" className="text-primary">
+                    View All Payments
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {paymentOverview.map((payment, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                          <DollarSign className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{payment.period}</p>
+                          <p className="text-sm text-muted-foreground">Revenue</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-foreground">{payment.amount}</p>
+                        <p className="text-sm text-green-600">{payment.change}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="calendar">
+          <BookingCalendar />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
