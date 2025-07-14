@@ -9,7 +9,6 @@ import { useNotifications, Notification } from '@/hooks/useNotifications';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuHeader,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
