@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { X, Filter } from 'lucide-react';
+import { Filter } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -69,7 +68,7 @@ export const GuestFiltersDialog: React.FC<GuestFiltersProps> = ({
         <DialogHeader>
           <DialogTitle>Filter Guests</DialogTitle>
           <DialogDescription>
-            Apply filters to find specific guests
+            Apply additional filters to find specific guests
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -97,14 +96,17 @@ export const GuestFiltersDialog: React.FC<GuestFiltersProps> = ({
           <div className="space-y-2">
             <Label htmlFor="idType">ID Type</Label>
             <Select 
-              value={tempFilters.idType || ''} 
-              onValueChange={(value) => setTempFilters(prev => ({ ...prev, idType: value }))}
+              value={tempFilters.idType || 'all'} 
+              onValueChange={(value) => setTempFilters(prev => ({ 
+                ...prev, 
+                idType: value === 'all' ? undefined : value 
+              }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select ID type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All types</SelectItem>
+                <SelectItem value="all">All ID types</SelectItem>
                 <SelectItem value="passport">Passport</SelectItem>
                 <SelectItem value="driver_license">Driver's License</SelectItem>
                 <SelectItem value="national_id">National ID</SelectItem>
@@ -132,67 +134,6 @@ export const GuestFiltersDialog: React.FC<GuestFiltersProps> = ({
               />
             </div>
           </div>
-
-          {activeFiltersCount > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Active Filters</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {filters.country && (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">Country: {filters.country}</Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => {
-                        const newFilters = { ...tempFilters };
-                        delete newFilters.country;
-                        setTempFilters(newFilters);
-                      }}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
-                {filters.city && (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">City: {filters.city}</Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => {
-                        const newFilters = { ...tempFilters };
-                        delete newFilters.city;
-                        setTempFilters(newFilters);
-                      }}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
-                {filters.idType && (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">ID Type: {filters.idType}</Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => {
-                        const newFilters = { ...tempFilters };
-                        delete newFilters.idType;
-                        setTempFilters(newFilters);
-                      }}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
 
           <div className="flex gap-2 pt-4">
             <Button onClick={handleApplyFilters} className="flex-1">

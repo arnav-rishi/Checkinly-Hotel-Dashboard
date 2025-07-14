@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, Filter } from 'lucide-react';
+import { Filter } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -77,14 +77,17 @@ export const RoomFiltersDialog: React.FC<RoomFiltersProps> = ({
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select 
-                value={tempFilters.status || ''} 
-                onValueChange={(value) => setTempFilters(prev => ({ ...prev, status: value }))}
+                value={tempFilters.status || 'all'} 
+                onValueChange={(value) => setTempFilters(prev => ({ 
+                  ...prev, 
+                  status: value === 'all' ? undefined : value 
+                }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="available">Available</SelectItem>
                   <SelectItem value="occupied">Occupied</SelectItem>
                   <SelectItem value="maintenance">Maintenance</SelectItem>
@@ -95,14 +98,17 @@ export const RoomFiltersDialog: React.FC<RoomFiltersProps> = ({
             <div className="space-y-2">
               <Label htmlFor="roomType">Room Type</Label>
               <Select 
-                value={tempFilters.roomType || ''} 
-                onValueChange={(value) => setTempFilters(prev => ({ ...prev, roomType: value }))}
+                value={tempFilters.roomType || 'all'} 
+                onValueChange={(value) => setTempFilters(prev => ({ 
+                  ...prev, 
+                  roomType: value === 'all' ? undefined : value 
+                }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All types</SelectItem>
+                  <SelectItem value="all">All types</SelectItem>
                   <SelectItem value="single">Single</SelectItem>
                   <SelectItem value="double">Double</SelectItem>
                   <SelectItem value="suite">Suite</SelectItem>
@@ -126,14 +132,17 @@ export const RoomFiltersDialog: React.FC<RoomFiltersProps> = ({
             <div className="space-y-2">
               <Label htmlFor="capacity">Capacity</Label>
               <Select 
-                value={tempFilters.capacity || ''} 
-                onValueChange={(value) => setTempFilters(prev => ({ ...prev, capacity: value }))}
+                value={tempFilters.capacity || 'all'} 
+                onValueChange={(value) => setTempFilters(prev => ({ 
+                  ...prev, 
+                  capacity: value === 'all' ? undefined : value 
+                }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Any capacity" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any capacity</SelectItem>
+                  <SelectItem value="all">Any capacity</SelectItem>
                   <SelectItem value="1">1 person</SelectItem>
                   <SelectItem value="2">2 people</SelectItem>
                   <SelectItem value="3">3 people</SelectItem>
