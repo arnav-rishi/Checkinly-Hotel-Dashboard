@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, Plus, Mail, Phone, Calendar, Trash2, Edit, Loader2, Filter, CheckCircle, AlertCircle } from 'lucide-react';
+import { Search, Plus, Mail, Phone, Calendar, Trash2, Edit, Loader2, AlertCircle } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { GuestFiltersDialog, GuestFilters } from '@/components/GuestFilters';
 import { useApi } from '@/hooks/useApi';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,7 +58,9 @@ const initialFormData: GuestFormData = {
 
 export const EnhancedGuests = () => {
   const [guests, setGuests] = useState<Guest[]>([]);
+  const [filteredGuests, setFilteredGuests] = useState<Guest[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState<GuestFilters>({});
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingGuest, setEditingGuest] = useState<Guest | null>(null);
   const [formData, setFormData] = useState<GuestFormData>(initialFormData);
@@ -82,6 +85,64 @@ export const EnhancedGuests = () => {
   useEffect(() => {
     loadGuests();
   }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [guests, searchTerm, filters]);
+
+  const applyFilters = () => {
+    let filtered = [...guests];
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(guest => {
+        const fullName = `${guest.first_name} ${guest.last_name}`.toLowerCase();
+        return fullName.includes(searchTerm.toLowerCase()) ||
+               guest.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               (guest.phone && guest.phone.toLowerCase().includes(searchTerm.toLowerCase()));
+      });
+    }
+
+    // Apply additional filters
+    if (filters.country) {
+      filtered = filtered.filter(guest => 
+        guest.country?.toLowerCase().includes(filters.country!.toLowerCase())
+      );
+    }
+
+    if (filters.city) {
+      filtered = filtered.filter(guest => 
+        guest.city?.toLowerCase().includes(filters.city!.toLowerCase())
+      );
+    }
+
+    if (filters.idType) {
+      filtered = filtered.filter(guest => guest.id_type === filters.idType);
+    }
+
+    if (filters.dateFrom) {
+      filtered = filtered.filter(guest => 
+        new Date(guest.created_at) >= new Date(filters.dateFrom!)
+      );
+    }
+
+    if (filters.dateTo) {
+      filtered = filtered.filter(guest => 
+        new Date(guest.created_at) <= new Date(filters.dateTo!)
+      );
+    }
+
+    setFilteredGuests(filtered);
+  };
+
+  const handleFiltersChange = (newFilters: GuestFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+    setSearchTerm('');
+  };
 
   const loadGuests = async () => {
     try {
@@ -242,15 +303,6 @@ export const EnhancedGuests = () => {
   const getStatusBadge = () => {
     return <Badge className="bg-blue-100 text-blue-800">Active</Badge>;
   };
-
-  const filteredGuests = guests.filter(guest => {
-    const fullName = `${guest.first_name} ${guest.last_name}`.toLowerCase();
-    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
-                         guest.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (guest.phone && guest.phone.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    return matchesSearch;
-  });
 
   return (
     <div className="space-y-6">
@@ -420,7 +472,7 @@ export const EnhancedGuests = () => {
         </Dialog>
       </div>
 
-      {/* Search */}
+      {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -434,10 +486,11 @@ export const EnhancedGuests = () => {
         </div>
         
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            More Filters
-          </Button>
+          <GuestFiltersDialog
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            onClearFilters={handleClearFilters}
+          />
         </div>
       </div>
 
@@ -451,6 +504,15 @@ export const EnhancedGuests = () => {
           {/* Results Summary */}
           <div className="text-sm text-muted-foreground">
             Showing {filteredGuests.length} of {guests.length} guests
+            {Object.values(filters).some(v => v) && (
+              <Button 
+                variant="link" 
+                className="p-0 h-auto ml-2 text-sm"
+                onClick={handleClearFilters}
+              >
+                Clear filters
+              </Button>
+            )}
           </div>
 
           {/* Guest Cards */}
@@ -521,7 +583,12 @@ export const EnhancedGuests = () => {
             <div className="text-center py-12">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold">No guests found</h3>
-              <p className="text-muted-foreground">Try adjusting your search or add a new guest</p>
+              <p className="text-muted-foreground">
+                {Object.values(filters).some(v => v) || searchTerm
+                  ? 'Try adjusting your search or filters'
+                  : 'Try adding a new guest'
+                }
+              </p>
             </div>
           )}
         </>

@@ -1,9 +1,8 @@
 
 import React, { useState } from 'react';
-import { Search, Bell, Settings, User, ChevronDown } from 'lucide-react';
+import { Search, Settings, User, ChevronDown } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Badge } from './ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,17 +12,15 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationPanel } from './NotificationPanel';
 
 export const Header = () => {
   const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Mock notifications - replace with real data
-  const notificationsCount = 3;
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement search functionality
+    // TODO: Implement global search functionality
     console.log('Searching for:', searchQuery);
   };
 
@@ -44,22 +41,7 @@ export const Header = () => {
       
       <div className="flex items-center space-x-4">
         {/* Notifications */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="relative"
-          aria-label={`Notifications ${notificationsCount > 0 ? `(${notificationsCount} unread)` : ''}`}
-        >
-          <Bell className="w-5 h-5" />
-          {notificationsCount > 0 && (
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
-            >
-              {notificationsCount}
-            </Badge>
-          )}
-        </Button>
+        <NotificationPanel />
 
         {/* User Menu */}
         <DropdownMenu>
@@ -95,8 +77,8 @@ export const Header = () => {
               Profile
             </DropdownMenuItem>
             <DropdownMenuItem>
-              <Bell className="mr-2 h-4 w-4" />
-              Notifications
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout}>
