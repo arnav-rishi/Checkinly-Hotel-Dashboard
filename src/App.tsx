@@ -1,58 +1,116 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import { ThemeProvider } from "./contexts/ThemeContext";
-import { ErrorBoundary } from "./components/ErrorBoundary";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { Layout } from "./components/Layout";
-import { Dashboard } from "./pages/Dashboard";
-import { Analytics } from "./pages/Analytics";
-import { Rooms } from "./pages/Rooms";
-import { Guests } from "./pages/Guests";
-import { Payments } from "./pages/Payments";
-import { SmartLocks } from "./pages/SmartLocks";
-import { Settings } from "./pages/Settings";
-import { Login } from "./pages/Login";
-import NotFound from "./pages/NotFound";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/toaster';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { SearchProvider } from '@/contexts/SearchContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { Layout } from '@/components/Layout';
+import { Login } from '@/pages/Login';
+import { Dashboard } from '@/pages/Dashboard';
+import { Rooms } from '@/pages/Rooms';
+import { Guests } from '@/pages/Guests';
+import { BookingCalendar } from '@/components/BookingCalendar';
+import { Payments } from '@/pages/Payments';
+import { Analytics } from '@/pages/Analytics';
+import { SmartLocks } from '@/pages/SmartLocks';
+import { Settings } from '@/pages/Settings';
+import { NotFound } from '@/pages/NotFound';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-const App = () => (
-  <ErrorBoundary>
-    <ThemeProvider defaultTheme="system" storageKey="hotel-dashboard-theme">
+function App() {
+  return (
+    <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AuthProvider>
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/" element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<Dashboard />} />
-                  <Route path="analytics" element={<Analytics />} />
-                  <Route path="rooms" element={<Rooms />} />
-                  <Route path="guests" element={<Guests />} />
-                  <Route path="payments" element={<Payments />} />
-                  <Route path="smart-locks" element={<SmartLocks />} />
-                  <Route path="settings" element={<Settings />} />
-                </Route>
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
+        <ThemeProvider>
+          <SearchProvider>
+            <Router>
+              <AuthProvider>
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/" element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Dashboard />
+                      </Layout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/rooms" element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Rooms />
+                      </Layout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/guests" element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Guests />
+                      </Layout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/calendar" element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <div className="space-y-6">
+                          <div>
+                            <h1 className="text-3xl font-bold text-foreground">Booking Calendar</h1>
+                            <p className="text-muted-foreground">View and manage hotel bookings</p>
+                          </div>
+                          <BookingCalendar />
+                        </div>
+                      </Layout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/payments" element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Payments />
+                      </Layout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/analytics" element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Analytics />
+                      </Layout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/smart-locks" element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <SmartLocks />
+                      </Layout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/settings" element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Settings />
+                      </Layout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </AuthProvider>
+            </Router>
+          </SearchProvider>
+        </ThemeProvider>
+        <Toaster />
       </QueryClientProvider>
-    </ThemeProvider>
-  </ErrorBoundary>
-);
+    </ErrorBoundary>
+  );
+}
 
 export default App;

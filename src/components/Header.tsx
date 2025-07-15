@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
-import { Search, Settings, User, ChevronDown } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, Settings, User, ChevronDown, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import {
@@ -12,42 +13,96 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSearch } from '@/contexts/SearchContext';
+import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { NotificationPanel } from './NotificationPanel';
 import { ThemeToggle } from './ThemeToggle';
 
 export const Header = () => {
   const { user, logout } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
+  const { searchQuery, setSearchQuery, searchResults, isSearching } = useSearch();
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  
+  useGlobalSearch();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement global search functionality
-    console.log('Searching for:', searchQuery);
+    if (searchResults.length > 0) {
+      navigate(searchResults[0].url);
+      setShowResults(false);
+    }
   };
+
+  const handleResultClick = (url: string) => {
+    navigate(url);
+    setShowResults(false);
+    setSearchQuery('');
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <header className="h-16 bg-background border-b border-border px-6 flex items-center justify-between">
-      <div className="flex-1 max-w-xl">
+      <div className="flex-1 max-w-xl relative" ref={searchRef}>
         <form onSubmit={handleSearch} className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
             type="text"
             placeholder="Search rooms, guests, bookings..."
-            className="w-full pl-10"
+            className="w-full pl-10 pr-4"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowResults(true);
+            }}
+            onFocus={() => setShowResults(true)}
           />
+          {isSearching && (
+            <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 animate-spin" />
+          )}
         </form>
+        
+        {showResults && searchQuery && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+            {searchResults.length > 0 ? (
+              <div className="py-2">
+                {searchResults.map((result) => (
+                  <button
+                    key={`${result.type}-${result.id}`}
+                    className="w-full text-left px-4 py-2 hover:bg-accent hover:text-accent-foreground transition-colors"
+                    onClick={() => handleResultClick(result.url)}
+                  >
+                    <div className="font-medium">{result.title}</div>
+                    <div className="text-sm text-muted-foreground">{result.description}</div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="py-4 px-4 text-sm text-muted-foreground">
+                {isSearching ? 'Searching...' : 'No results found'}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       
       <div className="flex items-center space-x-4">
-        {/* Theme Toggle */}
         <ThemeToggle />
-
-        {/* Notifications */}
         <NotificationPanel />
 
-        {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
