@@ -7,6 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Bed, Users, DollarSign, MapPin, Edit, Trash2, Loader2, AlertCircle, Eye, Settings } from 'lucide-react';
 import { useRooms } from '@/hooks/useRooms';
 import { RoomFiltersDialog, RoomFilters } from '@/components/RoomFilters';
+import { RoomViewModal } from '@/components/RoomViewModal';
+import { RoomEditModal } from '@/components/RoomEditModal';
+import { RoomManageModal } from '@/components/RoomManageModal';
 import { useToast } from '@/hooks/use-toast';
 
 interface Room {
@@ -23,10 +26,14 @@ interface Room {
 }
 
 export const Rooms = () => {
-  const { rooms, loading, createRoom, updateRoom, deleteRoom } = useRooms();
+  const { rooms, loading, updateRoom, deleteRoom } = useRooms();
   const [filteredRooms, setFilteredRooms] = useState<Room[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<RoomFilters>({});
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [manageModalOpen, setManageModalOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -102,45 +109,69 @@ export const Rooms = () => {
   };
 
   const handleViewRoom = (room: Room) => {
-    toast({
-      title: "Room Details",
-      description: `Viewing details for Room ${room.room_number}`,
-    });
-    // TODO: Implement room details modal or navigation
+    setSelectedRoom(room);
+    setViewModalOpen(true);
   };
 
   const handleEditRoom = (room: Room) => {
-    toast({
-      title: "Edit Room",
-      description: `Opening edit form for Room ${room.room_number}`,
-    });
-    // TODO: Implement edit room modal
-  };
-
-  const handleDeleteRoom = async (room: Room) => {
-    if (window.confirm(`Are you sure you want to delete Room ${room.room_number}?`)) {
-      try {
-        await deleteRoom(room.id);
-        toast({
-          title: "Success",
-          description: `Room ${room.room_number} deleted successfully`,
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to delete room",
-          variant: "destructive",
-        });
-      }
-    }
+    setSelectedRoom(room);
+    setEditModalOpen(true);
   };
 
   const handleManageRoom = (room: Room) => {
-    toast({
-      title: "Room Management",
-      description: `Opening management options for Room ${room.room_number}`,
-    });
-    // TODO: Implement room management features (booking, maintenance, etc.)
+    setSelectedRoom(room);
+    setManageModalOpen(true);
+  };
+
+  const handleSaveRoom = async (roomId: string, updates: Partial<Room>) => {
+    try {
+      await updateRoom(roomId, updates);
+      toast({
+        title: "Success",
+        description: "Room updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update room",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const handleStatusChange = async (roomId: string, status: string) => {
+    try {
+      await updateRoom(roomId, { status });
+      toast({
+        title: "Success",
+        description: "Room status updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update room status",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const handleDeleteRoom = async (roomId: string) => {
+    try {
+      await deleteRoom(roomId);
+      toast({
+        title: "Success",
+        description: "Room deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete room",
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
   return (
@@ -276,14 +307,6 @@ export const Rooms = () => {
                       <Settings className="h-3 w-3 mr-1" />
                       Manage
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteRoom(room)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -304,6 +327,37 @@ export const Rooms = () => {
           )}
         </>
       )}
+
+      {/* Modals */}
+      <RoomViewModal
+        room={selectedRoom}
+        isOpen={viewModalOpen}
+        onClose={() => {
+          setViewModalOpen(false);
+          setSelectedRoom(null);
+        }}
+      />
+
+      <RoomEditModal
+        room={selectedRoom}
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedRoom(null);
+        }}
+        onSave={handleSaveRoom}
+      />
+
+      <RoomManageModal
+        room={selectedRoom}
+        isOpen={manageModalOpen}
+        onClose={() => {
+          setManageModalOpen(false);
+          setSelectedRoom(null);
+        }}
+        onStatusChange={handleStatusChange}
+        onDelete={handleDeleteRoom}
+      />
     </div>
   );
 };
