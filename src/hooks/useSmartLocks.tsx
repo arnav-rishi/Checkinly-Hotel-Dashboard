@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useHotel } from './useHotel';
 
 export interface SmartLock {
   id: string;
@@ -12,11 +13,13 @@ export interface SmartLock {
   signal_strength?: number;
   last_heartbeat?: string;
   error_message?: string;
+  hotel_id?: string;
   created_at: string;
   updated_at: string;
 }
 
 export const useSmartLocks = () => {
+  const { hotel } = useHotel();
   const [smartLocks, setSmartLocks] = useState<SmartLock[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -24,6 +27,8 @@ export const useSmartLocks = () => {
   const [deleting, setDeleting] = useState(false);
 
   const fetchSmartLocks = async () => {
+    if (!hotel?.id) return;
+    
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -48,18 +53,20 @@ export const useSmartLocks = () => {
     }
   };
 
-  const createSmartLock = async (lockData: Omit<SmartLock, 'id' | 'created_at' | 'updated_at'>) => {
+  const createSmartLock = async (lockData: Omit<SmartLock, 'id' | 'created_at' | 'updated_at' | 'hotel_id'>) => {
+    if (!hotel?.id) return;
+    
     setCreating(true);
     try {
       const { data, error } = await supabase
         .from('smart_locks')
-        .insert([lockData])
+        .insert([{ ...lockData, hotel_id: hotel.id }])
         .select()
         .single();
 
       if (error) throw error;
 
-      await fetchSmartLocks(); // Refresh to get room data
+      await fetchSmartLocks();
       toast({
         title: 'Success',
         description: 'Smart lock created successfully',
@@ -146,7 +153,7 @@ export const useSmartLocks = () => {
 
   useEffect(() => {
     fetchSmartLocks();
-  }, []);
+  }, [hotel?.id]);
 
   return {
     smartLocks,

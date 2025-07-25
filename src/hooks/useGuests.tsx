@@ -1,16 +1,21 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Tables } from '@/integrations/supabase/types';
+import { useHotel } from './useHotel';
 
 type Guest = Tables<'guests'>;
 
 export function useGuests() {
+  const { hotel } = useHotel();
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchGuests = useCallback(async () => {
+    if (!hotel?.id) return;
+    
     try {
       setLoading(true);
       setError(null);
@@ -33,13 +38,15 @@ export function useGuests() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [hotel?.id]);
 
-  const createGuest = useCallback(async (guest: Omit<Guest, 'id' | 'created_at' | 'updated_at'>) => {
+  const createGuest = useCallback(async (guest: Omit<Guest, 'id' | 'created_at' | 'updated_at' | 'hotel_id'>) => {
+    if (!hotel?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('guests')
-        .insert([guest])
+        .insert([{ ...guest, hotel_id: hotel.id }])
         .select()
         .single();
 
@@ -60,7 +67,7 @@ export function useGuests() {
       });
       throw err;
     }
-  }, []);
+  }, [hotel?.id]);
 
   const updateGuest = useCallback(async (id: string, updates: Partial<Guest>) => {
     try {

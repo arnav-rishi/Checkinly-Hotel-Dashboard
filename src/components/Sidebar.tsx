@@ -12,6 +12,7 @@ import {
   Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useHotel } from '@/hooks/useHotel';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -26,11 +27,17 @@ const navigation = [
 
 export const Sidebar = () => {
   const location = useLocation();
+  const { hotel } = useHotel();
 
   return (
     <div className="w-64 bg-background border-r border-border h-full flex flex-col">
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-foreground">Hotel Manager</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          {hotel?.name || 'Hotel Manager'}
+        </h1>
+        {hotel?.name && (
+          <p className="text-sm text-muted-foreground mt-1">Management Dashboard</p>
+        )}
       </div>
       
       <nav className="flex-1 px-4 space-y-2">
