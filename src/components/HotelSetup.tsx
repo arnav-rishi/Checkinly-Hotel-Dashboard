@@ -43,8 +43,9 @@ export const HotelSetup: React.FC<HotelSetupProps> = ({ onComplete }) => {
     
     try {
       console.log('Starting hotel setup for user:', user.id);
+      console.log('Form data:', formData);
       
-      // Create hotel with timezone
+      // Create hotel
       const { data: hotelData, error: hotelError } = await supabase
         .from('hotels')
         .insert([{
@@ -65,7 +66,7 @@ export const HotelSetup: React.FC<HotelSetupProps> = ({ onComplete }) => {
       console.log('Hotel created successfully:', hotelData);
 
       // Create profile
-      const { error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .insert([{
           id: user.id,
@@ -73,14 +74,16 @@ export const HotelSetup: React.FC<HotelSetupProps> = ({ onComplete }) => {
           first_name: formData.firstName,
           last_name: formData.lastName,
           role: 'admin'
-        }]);
+        }])
+        .select()
+        .single();
 
       if (profileError) {
         console.error('Profile creation error:', profileError);
         throw new Error(`Failed to create profile: ${profileError.message}`);
       }
 
-      console.log('Profile created successfully');
+      console.log('Profile created successfully:', profileData);
 
       toast({
         title: 'Success',

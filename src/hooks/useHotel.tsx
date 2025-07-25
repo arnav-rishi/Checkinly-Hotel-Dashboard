@@ -26,14 +26,14 @@ export interface UserProfile {
 }
 
 export const useHotel = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) {
+    if (!isAuthenticated || !user) {
       setLoading(false);
       setHotel(null);
       setProfile(null);
@@ -41,7 +41,7 @@ export const useHotel = () => {
     }
 
     fetchHotelData();
-  }, [user]);
+  }, [user, isAuthenticated]);
 
   const fetchHotelData = async () => {
     if (!user) return;
@@ -65,6 +65,7 @@ export const useHotel = () => {
           console.log('Profile not found, user needs to complete setup');
           setProfile(null);
           setHotel(null);
+          setLoading(false);
           return;
         } else {
           throw profileError;
@@ -86,6 +87,7 @@ export const useHotel = () => {
           // Hotel not found - data integrity issue
           console.log('Hotel not found for profile');
           setHotel(null);
+          setLoading(false);
           return;
         } else {
           throw hotelError;
@@ -108,11 +110,13 @@ export const useHotel = () => {
   };
 
   const updateHotel = async (updates: Partial<Hotel>) => {
+    if (!hotel?.id) return;
+
     try {
       const { data, error } = await supabase
         .from('hotels')
         .update(updates)
-        .eq('id', hotel?.id)
+        .eq('id', hotel.id)
         .select()
         .single();
 
@@ -135,11 +139,13 @@ export const useHotel = () => {
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
+    if (!user?.id) return;
+
     try {
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('id', user?.id)
+        .eq('id', user.id)
         .select()
         .single();
 
