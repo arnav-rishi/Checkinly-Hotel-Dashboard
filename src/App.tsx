@@ -1,5 +1,4 @@
 
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,9 +28,11 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { hotel, profile, loading: hotelLoading } = useHotel();
+  const { hotel, profile, loading: hotelLoading, error: hotelError } = useHotel();
 
-  if (authLoading || (isAuthenticated && hotelLoading)) {
+  console.log('App state:', { isAuthenticated, authLoading, hotel, profile, hotelLoading, hotelError });
+
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -39,8 +40,31 @@ const AppContent = () => {
     );
   }
 
-  // Show hotel setup if user is authenticated but has no hotel/profile
-  if (isAuthenticated && !hotel && !profile) {
+  if (!isAuthenticated) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={<Login />} />
+      </Routes>
+    );
+  }
+
+  // If user is authenticated but we're still loading hotel data
+  if (hotelLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  // Show hotel setup if user is authenticated but has no profile (needs to complete setup)
+  if (isAuthenticated && !profile) {
+    return <HotelSetup onComplete={() => window.location.reload()} />;
+  }
+
+  // Show hotel setup if user has profile but no hotel (data integrity issue)
+  if (isAuthenticated && profile && !hotel) {
     return <HotelSetup onComplete={() => window.location.reload()} />;
   }
 

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,30 +23,46 @@ export const HotelSetup: React.FC<HotelSetupProps> = ({ onComplete }) => {
     phone: '',
     email: '',
     firstName: '',
-    lastName: ''
+    lastName: '',
+    timezone: 'UTC'
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'User not authenticated',
+        variant: 'destructive'
+      });
+      return;
+    }
     
     setLoading(true);
     
     try {
-      // Create hotel
+      console.log('Starting hotel setup for user:', user.id);
+      
+      // Create hotel with timezone
       const { data: hotelData, error: hotelError } = await supabase
         .from('hotels')
         .insert([{
           name: formData.hotelName,
-          address: formData.address,
-          phone: formData.phone,
-          email: formData.email
+          address: formData.address || null,
+          phone: formData.phone || null,
+          email: formData.email || null,
+          timezone: formData.timezone
         }])
         .select()
         .single();
 
-      if (hotelError) throw hotelError;
+      if (hotelError) {
+        console.error('Hotel creation error:', hotelError);
+        throw new Error(`Failed to create hotel: ${hotelError.message}`);
+      }
+
+      console.log('Hotel created successfully:', hotelData);
 
       // Create profile
       const { error: profileError } = await supabase
@@ -58,7 +75,12 @@ export const HotelSetup: React.FC<HotelSetupProps> = ({ onComplete }) => {
           role: 'admin'
         }]);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        throw new Error(`Failed to create profile: ${profileError.message}`);
+      }
+
+      console.log('Profile created successfully');
 
       toast({
         title: 'Success',
@@ -70,7 +92,7 @@ export const HotelSetup: React.FC<HotelSetupProps> = ({ onComplete }) => {
       console.error('Error setting up hotel:', error);
       toast({
         title: 'Error',
-        description: 'Failed to set up hotel. Please try again.',
+        description: error.message || 'Failed to set up hotel. Please try again.',
         variant: 'destructive'
       });
     } finally {
@@ -157,6 +179,25 @@ export const HotelSetup: React.FC<HotelSetupProps> = ({ onComplete }) => {
                   disabled={loading}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="timezone">Timezone</Label>
+              <Select value={formData.timezone} onValueChange={(value) => setFormData({ ...formData, timezone: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select timezone" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="UTC">UTC</SelectItem>
+                  <SelectItem value="America/New_York">Eastern Time</SelectItem>
+                  <SelectItem value="America/Chicago">Central Time</SelectItem>
+                  <SelectItem value="America/Denver">Mountain Time</SelectItem>
+                  <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
+                  <SelectItem value="Europe/London">London</SelectItem>
+                  <SelectItem value="Europe/Paris">Paris</SelectItem>
+                  <SelectItem value="Asia/Tokyo">Tokyo</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <Button 

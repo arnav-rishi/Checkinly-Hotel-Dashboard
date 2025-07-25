@@ -35,6 +35,8 @@ export const useHotel = () => {
   useEffect(() => {
     if (!user) {
       setLoading(false);
+      setHotel(null);
+      setProfile(null);
       return;
     }
 
@@ -42,26 +44,34 @@ export const useHotel = () => {
   }, [user]);
 
   const fetchHotelData = async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
       setError(null);
+
+      console.log('Fetching hotel data for user:', user.id);
 
       // First, get the user's profile to get hotel_id
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user?.id)
+        .eq('id', user.id)
         .single();
 
       if (profileError) {
         if (profileError.code === 'PGRST116') {
-          setError('Profile not found. Please contact support.');
+          // Profile not found - user needs to complete setup
+          console.log('Profile not found, user needs to complete setup');
+          setProfile(null);
+          setHotel(null);
+          return;
         } else {
           throw profileError;
         }
-        return;
       }
 
+      console.log('Profile found:', profileData);
       setProfile(profileData);
 
       // Then get the hotel data
@@ -71,8 +81,18 @@ export const useHotel = () => {
         .eq('id', profileData.hotel_id)
         .single();
 
-      if (hotelError) throw hotelError;
+      if (hotelError) {
+        if (hotelError.code === 'PGRST116') {
+          // Hotel not found - data integrity issue
+          console.log('Hotel not found for profile');
+          setHotel(null);
+          return;
+        } else {
+          throw hotelError;
+        }
+      }
 
+      console.log('Hotel found:', hotelData);
       setHotel(hotelData);
     } catch (err: any) {
       console.error('Error fetching hotel data:', err);
