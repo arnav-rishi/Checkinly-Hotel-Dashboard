@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,25 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Search, Plus, Mail, Phone, Calendar, Trash2, Edit, Loader2, AlertCircle } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { GuestFiltersDialog, GuestFilters } from '@/components/GuestFilters';
-import { useApi } from '@/hooks/useApi';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-
-interface Guest {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone?: string;
-  id_number?: string;
-  id_type?: string;
-  address?: string;
-  city?: string;
-  country?: string;
-  date_of_birth?: string;
-  created_at: string;
-  updated_at: string;
-}
+import { useGuests } from '@/hooks/useGuests';
 
 interface GuestFormData {
   first_name: string;
@@ -57,14 +40,16 @@ const initialFormData: GuestFormData = {
 };
 
 export const EnhancedGuests = () => {
-  const [guests, setGuests] = useState<Guest[]>([]);
-  const [filteredGuests, setFilteredGuests] = useState<Guest[]>([]);
+  const { guests, loading, createGuest, updateGuest, deleteGuest } = useGuests();
+  const [filteredGuests, setFilteredGuests] = useState(guests);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<GuestFilters>({});
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingGuest, setEditingGuest] = useState<Guest | null>(null);
+  const [editingGuest, setEditingGuest] = useState<any>(null);
   const [formData, setFormData] = useState<GuestFormData>(initialFormData);
   const [formErrors, setFormErrors] = useState<Partial<GuestFormData>>({});
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     title: string;
@@ -77,14 +62,9 @@ export const EnhancedGuests = () => {
     onConfirm: () => {}
   });
 
-  const { loading: fetchLoading, execute: fetchGuests } = useApi();
-  const { loading: submitLoading, execute: submitGuest } = useApi();
-  const { loading: deleteLoading, execute: deleteGuest } = useApi();
-  const { toast } = useToast();
-
   useEffect(() => {
-    loadGuests();
-  }, []);
+    setFilteredGuests(guests);
+  }, [guests]);
 
   useEffect(() => {
     applyFilters();
@@ -144,29 +124,6 @@ export const EnhancedGuests = () => {
     setSearchTerm('');
   };
 
-  const loadGuests = async () => {
-    try {
-      const result = await fetchGuests(async () => {
-        const { data, error } = await supabase
-          .from('guests')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        return data;
-      });
-      
-      if (result) {
-        setGuests(result);
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to load guests",
-        variant: "destructive",
-      });
-    }
-  };
-
   const validateForm = (): boolean => {
     const errors: Partial<GuestFormData> = {};
 
@@ -199,48 +156,26 @@ export const EnhancedGuests = () => {
       return;
     }
 
-    try {
-      const result = await submitGuest(async () => {
-        if (editingGuest) {
-          // Update existing guest
-          const { data, error } = await supabase
-            .from('guests')
-            .update(formData)
-            .eq('id', editingGuest.id)
-            .select()
-            .single();
-          if (error) throw error;
-          return data;
-        } else {
-          // Create new guest
-          const { data, error } = await supabase
-            .from('guests')
-            .insert(formData)
-            .select()
-            .single();
-          if (error) throw error;
-          return data;
-        }
-      });
+    setSubmitLoading(true);
 
-      if (result) {
-        toast({
-          title: "Success",
-          description: `Guest ${editingGuest ? 'updated' : 'created'} successfully`,
-        });
-        resetForm();
-        loadGuests(); // Refresh the list
+    try {
+      if (editingGuest) {
+        // Update existing guest
+        await updateGuest(editingGuest.id, formData);
+      } else {
+        // Create new guest
+        await createGuest(formData);
       }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      resetForm();
+    } catch (error) {
+      // Error handling is already done in the useGuests hook
+      console.error('Error submitting guest:', error);
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
-  const handleEdit = (guest: Guest) => {
+  const handleEdit = (guest: any) => {
     setEditingGuest(guest);
     setFormData({
       first_name: guest.first_name,
@@ -258,7 +193,7 @@ export const EnhancedGuests = () => {
     setIsAddDialogOpen(true);
   };
 
-  const handleDelete = (guest: Guest) => {
+  const handleDelete = (guest: any) => {
     setConfirmDialog({
       open: true,
       title: 'Delete Guest',
@@ -268,28 +203,15 @@ export const EnhancedGuests = () => {
   };
 
   const confirmDelete = async (id: string) => {
+    setDeleteLoading(true);
     try {
-      await deleteGuest(async () => {
-        const { error } = await supabase
-          .from('guests')
-          .delete()
-          .eq('id', id);
-        if (error) throw error;
-      });
-
-      toast({
-        title: "Success",
-        description: 'Guest deleted successfully',
-      });
-      
+      await deleteGuest(id);
       setConfirmDialog(prev => ({ ...prev, open: false }));
-      loadGuests(); // Refresh the list
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+    } catch (error) {
+      // Error handling is already done in the useGuests hook
+      console.error('Error deleting guest:', error);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -495,7 +417,7 @@ export const EnhancedGuests = () => {
       </div>
 
       {/* Loading State */}
-      {fetchLoading ? (
+      {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
