@@ -32,17 +32,22 @@ export const usePayments = () => {
 
       if (error) throw error;
       
-      // Ensure data is properly typed and filter out any invalid entries
-      const validPayments = (data || []).filter((payment): payment is Payment => 
-        payment && 
-        typeof payment.id === 'string' && 
-        typeof payment.booking_id === 'string' &&
-        typeof payment.amount === 'number' &&
-        typeof payment.payment_method === 'string' &&
-        typeof payment.payment_status === 'string' &&
-        typeof payment.created_at === 'string' &&
-        typeof payment.created_by === 'string'
-      );
+      // Type guard function that properly handles optional fields
+      const isValidPayment = (payment: any): payment is Payment => {
+        return payment && 
+               typeof payment.id === 'string' && 
+               typeof payment.booking_id === 'string' &&
+               typeof payment.amount === 'number' &&
+               typeof payment.payment_method === 'string' &&
+               typeof payment.payment_status === 'string' &&
+               typeof payment.created_at === 'string' &&
+               typeof payment.created_by === 'string' &&
+               (payment.transaction_id === null || payment.transaction_id === undefined || typeof payment.transaction_id === 'string') &&
+               (payment.paid_at === null || payment.paid_at === undefined || typeof payment.paid_at === 'string');
+      };
+      
+      // Filter and validate the data
+      const validPayments = (data || []).filter(isValidPayment);
       
       setPayments(validPayments);
     } catch (error: any) {
@@ -52,7 +57,7 @@ export const usePayments = () => {
         description: 'Failed to load payments',
         variant: 'destructive',
       });
-      setPayments([]); // Set empty array on error
+      setPayments([]);
     } finally {
       setLoading(false);
     }
@@ -79,12 +84,24 @@ export const usePayments = () => {
           typeof data.created_at === 'string' &&
           typeof data.created_by === 'string') {
         
-        setPayments(prev => [data as Payment, ...prev]);
+        const newPayment: Payment = {
+          id: data.id,
+          booking_id: data.booking_id,
+          amount: data.amount,
+          payment_method: data.payment_method,
+          payment_status: data.payment_status,
+          created_at: data.created_at,
+          created_by: data.created_by,
+          transaction_id: data.transaction_id || undefined,
+          paid_at: data.paid_at || undefined,
+        };
+        
+        setPayments(prev => [newPayment, ...prev]);
         toast({
           title: 'Success',
           description: 'Payment created successfully',
         });
-        return data as Payment;
+        return newPayment;
       } else {
         throw new Error('Invalid payment data returned');
       }
@@ -123,15 +140,27 @@ export const usePayments = () => {
           typeof data.created_at === 'string' &&
           typeof data.created_by === 'string') {
         
+        const updatedPayment: Payment = {
+          id: data.id,
+          booking_id: data.booking_id,
+          amount: data.amount,
+          payment_method: data.payment_method,
+          payment_status: data.payment_status,
+          created_at: data.created_at,
+          created_by: data.created_by,
+          transaction_id: data.transaction_id || undefined,
+          paid_at: data.paid_at || undefined,
+        };
+        
         setPayments(prev => prev.map(payment => 
-          payment.id === id ? { ...payment, ...data } as Payment : payment
+          payment.id === id ? updatedPayment : payment
         ));
         
         toast({
           title: 'Success',
           description: 'Payment updated successfully',
         });
-        return data as Payment;
+        return updatedPayment;
       } else {
         throw new Error('Invalid payment data returned');
       }
