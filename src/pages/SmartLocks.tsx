@@ -3,8 +3,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { KeyRound, Battery, Wifi, Clock, Lock, Unlock, Loader2 } from 'lucide-react';
+import { KeyRound, Battery, Wifi, Clock, Lock, Unlock, Loader2, Zap, Activity } from 'lucide-react';
 import { useSmartLocks } from '@/hooks/useSmartLocks';
+import { AddSmartLockModal } from '@/components/AddSmartLockModal';
 
 export const SmartLocks = () => {
   const { smartLocks, loading, updating, updateLockStatus } = useSmartLocks();
@@ -21,6 +22,19 @@ export const SmartLocks = () => {
     if (strength > 70) return 'Strong';
     if (strength > 40) return 'Medium';
     return 'Weak';
+  };
+
+  const getSignalIcon = (strength?: number) => {
+    if (!strength || strength < 40) return 'text-red-500';
+    if (strength < 70) return 'text-yellow-500';
+    return 'text-green-500';
+  };
+
+  const isOnline = (lastPing?: string) => {
+    if (!lastPing) return false;
+    const lastSeen = new Date(lastPing);
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    return lastSeen > fiveMinutesAgo;
   };
 
   const handleToggleLock = async (lockId: string, currentStatus: string) => {
@@ -47,6 +61,7 @@ export const SmartLocks = () => {
           <h1 className="text-3xl font-bold text-foreground">Smart Locks</h1>
           <p className="text-muted-foreground mt-1">Monitor and control room smart locks</p>
         </div>
+        <AddSmartLockModal />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -56,9 +71,30 @@ export const SmartLocks = () => {
               <CardTitle className="text-lg font-medium">
                 Room {lock.rooms?.room_number || 'N/A'}
               </CardTitle>
-              <KeyRound className="h-5 w-5 text-muted-foreground" />
+              <div className="flex items-center space-x-2">
+                <Badge variant={isOnline(lock.last_ping) ? 'default' : 'secondary'}>
+                  <Activity className="w-3 h-3 mr-1" />
+                  {isOnline(lock.last_ping) ? 'Online' : 'Offline'}
+                </Badge>
+                <KeyRound className="h-5 w-5 text-muted-foreground" />
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Lock Info */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Lock ID</span>
+                <span className="text-sm font-medium">{lock.lock_id}</span>
+              </div>
+
+              {/* Lock Type */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Type</span>
+                <Badge variant="outline">
+                  <Zap className="w-3 h-3 mr-1" />
+                  {lock.type || 'NFC'}
+                </Badge>
+              </div>
+
               {/* Lock Status */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Status</span>
@@ -92,7 +128,7 @@ export const SmartLocks = () => {
               {/* Signal Strength */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Wifi className="w-4 h-4 text-muted-foreground" />
+                  <Wifi className={`w-4 h-4 ${getSignalIcon(lock.signal_strength)}`} />
                   <span className="text-sm text-muted-foreground">Signal</span>
                 </div>
                 <span className="text-sm font-medium">
@@ -114,11 +150,25 @@ export const SmartLocks = () => {
                 </span>
               </div>
 
+              {/* Last Ping */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Activity className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Last ping</span>
+                </div>
+                <span className="text-sm font-medium">
+                  {lock.last_ping 
+                    ? new Date(lock.last_ping).toLocaleTimeString()
+                    : 'Never'
+                  }
+                </span>
+              </div>
+
               {/* Toggle Button */}
               <Button
                 variant="outline"
                 onClick={() => handleToggleLock(lock.id, lock.status)}
-                disabled={updating}
+                disabled={updating || !isOnline(lock.last_ping)}
                 className="w-full"
               >
                 {updating ? (
@@ -147,8 +197,11 @@ export const SmartLocks = () => {
           <KeyRound className="mx-auto h-12 w-12 text-muted-foreground" />
           <h3 className="mt-2 text-sm font-semibold text-foreground">No smart locks</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Smart locks will appear here once they're installed and configured.
+            Get started by adding your first smart lock to the system.
           </p>
+          <div className="mt-4">
+            <AddSmartLockModal />
+          </div>
         </div>
       )}
     </div>

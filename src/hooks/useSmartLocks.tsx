@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useHotel } from './useHotel';
 
 export interface SmartLock {
   id: string;
@@ -12,14 +11,16 @@ export interface SmartLock {
   battery_level?: number;
   signal_strength?: number;
   last_heartbeat?: string;
+  last_ping?: string;
+  type?: string;
   error_message?: string;
   hotel_id?: string;
+  created_by?: string;
   created_at: string;
   updated_at: string;
 }
 
 export const useSmartLocks = () => {
-  const { hotel } = useHotel();
   const [smartLocks, setSmartLocks] = useState<SmartLock[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -27,8 +28,6 @@ export const useSmartLocks = () => {
   const [deleting, setDeleting] = useState(false);
 
   const fetchSmartLocks = async () => {
-    if (!hotel?.id) return;
-    
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -53,14 +52,12 @@ export const useSmartLocks = () => {
     }
   };
 
-  const createSmartLock = async (lockData: Omit<SmartLock, 'id' | 'created_at' | 'updated_at' | 'hotel_id'>) => {
-    if (!hotel?.id) return;
-    
+  const createSmartLock = async (lockData: Omit<SmartLock, 'id' | 'created_at' | 'updated_at' | 'hotel_id' | 'created_by'>) => {
     setCreating(true);
     try {
       const { data, error } = await supabase
         .from('smart_locks')
-        .insert([{ ...lockData, hotel_id: hotel.id }])
+        .insert([lockData])
         .select()
         .single();
 
@@ -90,7 +87,11 @@ export const useSmartLocks = () => {
     try {
       const { data, error } = await supabase
         .from('smart_locks')
-        .update(updates)
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+          last_ping: new Date().toISOString()
+        })
         .eq('id', id)
         .select()
         .single();
@@ -148,12 +149,16 @@ export const useSmartLocks = () => {
   };
 
   const updateLockStatus = async (id: string, status: 'locked' | 'unlocked') => {
-    return updateSmartLock(id, { status, last_heartbeat: new Date().toISOString() });
+    return updateSmartLock(id, { 
+      status, 
+      last_heartbeat: new Date().toISOString(),
+      last_ping: new Date().toISOString()
+    });
   };
 
   useEffect(() => {
     fetchSmartLocks();
-  }, [hotel?.id]);
+  }, []);
 
   return {
     smartLocks,
