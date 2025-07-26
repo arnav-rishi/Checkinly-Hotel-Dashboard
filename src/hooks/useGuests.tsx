@@ -3,10 +3,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Tables } from '@/integrations/supabase/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Guest = Tables<'guests'>;
 
 export function useGuests() {
+  const { user } = useAuth();
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,40 +38,61 @@ export function useGuests() {
     }
   }, []);
 
-  const createGuest = useCallback(async (guest: Omit<Guest, 'id' | 'created_at' | 'updated_at' | 'hotel_id' | 'created_by'>) => {
+  const createGuest = useCallback(async (guestData: Omit<Guest, 'id' | 'created_at' | 'updated_at' | 'hotel_id'>) => {
+    if (!user) {
+      throw new Error('User must be logged in to create guests');
+    }
+
     try {
-      // Get user's hotel_id from their profile
+      // First get the user's hotel_id from their profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('hotel_id')
+        .eq('id', user.id)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        throw new Error('Could not get user profile. Please ensure your profile is set up correctly.');
+      }
 
+      if (!profile?.hotel_id) {
+        throw new Error('No hotel associated with your profile. Please contact support.');
+      }
+
+      // Create the guest with the hotel_id
       const { data, error } = await supabase
         .from('guests')
-        .insert([{ ...guest, hotel_id: profile.hotel_id }])
+        .insert([{ 
+          ...guestData, 
+          hotel_id: profile.hotel_id 
+        }])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Insert error:', error);
+        throw error;
+      }
 
-      setGuests(prev => [data, ...prev]);
-      toast({
-        title: 'Success',
-        description: 'Guest created successfully'
-      });
-      
-      return data;
+      if (data) {
+        setGuests(prev => [data, ...prev]);
+        toast({
+          title: 'Success',
+          description: 'Guest created successfully'
+        });
+        return data;
+      }
     } catch (err: any) {
+      console.error('Create guest error:', err);
       toast({
         title: 'Error creating guest',
-        description: err.message,
+        description: err.message || 'Failed to create guest. Please try again.',
         variant: 'destructive'
       });
       throw err;
     }
-  }, []);
+  }, [user]);
 
   const updateGuest = useCallback(async (id: string, updates: Partial<Guest>) => {
     try {
@@ -127,8 +150,10 @@ export function useGuests() {
   }, []);
 
   useEffect(() => {
-    fetchGuests();
-  }, [fetchGuests]);
+    if (user) {
+      fetchGuests();
+    }
+  }, [fetchGuests, user]);
 
   return {
     guests,
