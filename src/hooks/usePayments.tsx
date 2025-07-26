@@ -50,7 +50,7 @@ export const usePayments = () => {
       const { data, error } = await supabase
         .from('payments')
         .insert([paymentData])
-        .select()
+        .select('*')
         .single();
 
       if (error) throw error;
@@ -81,7 +81,7 @@ export const usePayments = () => {
         .from('payments')
         .update(updates)
         .eq('id', id)
-        .select()
+        .select('*')
         .single();
 
       if (error) throw error;
