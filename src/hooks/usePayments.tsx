@@ -27,7 +27,7 @@ export const usePayments = () => {
     try {
       const { data, error } = await supabase
         .from('payments')
-        .select('*')
+        .select('*, created_by')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -50,7 +50,7 @@ export const usePayments = () => {
       const { data, error } = await supabase
         .from('payments')
         .insert([paymentData])
-        .select('*')
+        .select('*, created_by')
         .single();
 
       if (error) throw error;
@@ -81,7 +81,7 @@ export const usePayments = () => {
         .from('payments')
         .update(updates)
         .eq('id', id)
-        .select('*')
+        .select('*, created_by')
         .single();
 
       if (error) throw error;
