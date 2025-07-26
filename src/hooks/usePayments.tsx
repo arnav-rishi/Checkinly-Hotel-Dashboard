@@ -27,11 +27,24 @@ export const usePayments = () => {
     try {
       const { data, error } = await supabase
         .from('payments')
-        .select('*, created_by')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPayments(data || []);
+      
+      // Ensure data is properly typed and filter out any invalid entries
+      const validPayments = (data || []).filter((payment): payment is Payment => 
+        payment && 
+        typeof payment.id === 'string' && 
+        typeof payment.booking_id === 'string' &&
+        typeof payment.amount === 'number' &&
+        typeof payment.payment_method === 'string' &&
+        typeof payment.payment_status === 'string' &&
+        typeof payment.created_at === 'string' &&
+        typeof payment.created_by === 'string'
+      );
+      
+      setPayments(validPayments);
     } catch (error: any) {
       console.error('Error fetching payments:', error);
       toast({
@@ -39,6 +52,7 @@ export const usePayments = () => {
         description: 'Failed to load payments',
         variant: 'destructive',
       });
+      setPayments([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -50,17 +64,30 @@ export const usePayments = () => {
       const { data, error } = await supabase
         .from('payments')
         .insert([paymentData])
-        .select('*, created_by')
+        .select('*')
         .single();
 
       if (error) throw error;
 
-      setPayments(prev => [data, ...prev]);
-      toast({
-        title: 'Success',
-        description: 'Payment created successfully',
-      });
-      return data;
+      // Validate the returned data
+      if (data && 
+          typeof data.id === 'string' && 
+          typeof data.booking_id === 'string' &&
+          typeof data.amount === 'number' &&
+          typeof data.payment_method === 'string' &&
+          typeof data.payment_status === 'string' &&
+          typeof data.created_at === 'string' &&
+          typeof data.created_by === 'string') {
+        
+        setPayments(prev => [data as Payment, ...prev]);
+        toast({
+          title: 'Success',
+          description: 'Payment created successfully',
+        });
+        return data as Payment;
+      } else {
+        throw new Error('Invalid payment data returned');
+      }
     } catch (error: any) {
       console.error('Error creating payment:', error);
       toast({
@@ -81,20 +108,33 @@ export const usePayments = () => {
         .from('payments')
         .update(updates)
         .eq('id', id)
-        .select('*, created_by')
+        .select('*')
         .single();
 
       if (error) throw error;
 
-      setPayments(prev => prev.map(payment => 
-        payment.id === id ? { ...payment, ...data } : payment
-      ));
-      
-      toast({
-        title: 'Success',
-        description: 'Payment updated successfully',
-      });
-      return data;
+      // Validate the returned data
+      if (data && 
+          typeof data.id === 'string' && 
+          typeof data.booking_id === 'string' &&
+          typeof data.amount === 'number' &&
+          typeof data.payment_method === 'string' &&
+          typeof data.payment_status === 'string' &&
+          typeof data.created_at === 'string' &&
+          typeof data.created_by === 'string') {
+        
+        setPayments(prev => prev.map(payment => 
+          payment.id === id ? { ...payment, ...data } as Payment : payment
+        ));
+        
+        toast({
+          title: 'Success',
+          description: 'Payment updated successfully',
+        });
+        return data as Payment;
+      } else {
+        throw new Error('Invalid payment data returned');
+      }
     } catch (error: any) {
       console.error('Error updating payment:', error);
       toast({

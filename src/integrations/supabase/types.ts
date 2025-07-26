@@ -168,6 +168,7 @@ export type Database = {
           amount: number
           booking_id: string
           created_at: string
+          created_by: string | null
           id: string
           paid_at: string | null
           payment_method: string
@@ -178,6 +179,7 @@ export type Database = {
           amount: number
           booking_id: string
           created_at?: string
+          created_by?: string | null
           id?: string
           paid_at?: string | null
           payment_method: string
@@ -188,6 +190,7 @@ export type Database = {
           amount?: number
           booking_id?: string
           created_at?: string
+          created_by?: string | null
           id?: string
           paid_at?: string | null
           payment_method?: string
