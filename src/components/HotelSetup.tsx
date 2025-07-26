@@ -45,7 +45,7 @@ export const HotelSetup: React.FC<HotelSetupProps> = ({ onComplete }) => {
       console.log('Starting hotel setup for user:', user.id);
       console.log('Form data:', formData);
       
-      // Create hotel
+      // Create hotel - created_by will be automatically set by the database
       const { data: hotelData, error: hotelError } = await supabase
         .from('hotels')
         .insert([{
