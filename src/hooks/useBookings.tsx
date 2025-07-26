@@ -4,30 +4,34 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Tables } from '@/integrations/supabase/types';
 
-type Guest = Tables<'guests'>;
+type Booking = Tables<'bookings'>;
 
-export function useGuests() {
-  const [guests, setGuests] = useState<Guest[]>([]);
+export function useBookings() {
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchGuests = useCallback(async () => {
+  const fetchBookings = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
       const { data, error } = await supabase
-        .from('guests')
-        .select('*')
+        .from('bookings')
+        .select(`
+          *,
+          guests(first_name, last_name, email),
+          rooms(room_number, room_type)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      setGuests(data || []);
+      setBookings(data || []);
     } catch (err: any) {
       setError(err.message);
       toast({
-        title: 'Error loading guests',
+        title: 'Error loading bookings',
         description: err.message,
         variant: 'destructive'
       });
@@ -36,34 +40,30 @@ export function useGuests() {
     }
   }, []);
 
-  const createGuest = useCallback(async (guest: Omit<Guest, 'id' | 'created_at' | 'updated_at' | 'hotel_id' | 'created_by'>) => {
+  const createBooking = useCallback(async (booking: Omit<Booking, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
     try {
-      // Get user's hotel_id from their profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('hotel_id')
-        .single();
-
-      if (profileError) throw profileError;
-
       const { data, error } = await supabase
-        .from('guests')
-        .insert([{ ...guest, hotel_id: profile.hotel_id }])
-        .select()
+        .from('bookings')
+        .insert([booking])
+        .select(`
+          *,
+          guests(first_name, last_name, email),
+          rooms(room_number, room_type)
+        `)
         .single();
 
       if (error) throw error;
 
-      setGuests(prev => [data, ...prev]);
+      setBookings(prev => [data, ...prev]);
       toast({
         title: 'Success',
-        description: 'Guest created successfully'
+        description: 'Booking created successfully'
       });
       
       return data;
     } catch (err: any) {
       toast({
-        title: 'Error creating guest',
+        title: 'Error creating booking',
         description: err.message,
         variant: 'destructive'
       });
@@ -71,30 +71,34 @@ export function useGuests() {
     }
   }, []);
 
-  const updateGuest = useCallback(async (id: string, updates: Partial<Guest>) => {
+  const updateBooking = useCallback(async (id: string, updates: Partial<Booking>) => {
     try {
       const { data, error } = await supabase
-        .from('guests')
+        .from('bookings')
         .update(updates)
         .eq('id', id)
-        .select()
+        .select(`
+          *,
+          guests(first_name, last_name, email),
+          rooms(room_number, room_type)
+        `)
         .single();
 
       if (error) throw error;
 
-      setGuests(prev => prev.map(guest => 
-        guest.id === id ? data : guest
+      setBookings(prev => prev.map(booking => 
+        booking.id === id ? data : booking
       ));
       
       toast({
         title: 'Success',
-        description: 'Guest updated successfully'
+        description: 'Booking updated successfully'
       });
       
       return data;
     } catch (err: any) {
       toast({
-        title: 'Error updating guest',
+        title: 'Error updating booking',
         description: err.message,
         variant: 'destructive'
       });
@@ -102,23 +106,23 @@ export function useGuests() {
     }
   }, []);
 
-  const deleteGuest = useCallback(async (id: string) => {
+  const deleteBooking = useCallback(async (id: string) => {
     try {
       const { error } = await supabase
-        .from('guests')
+        .from('bookings')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
 
-      setGuests(prev => prev.filter(guest => guest.id !== id));
+      setBookings(prev => prev.filter(booking => booking.id !== id));
       toast({
         title: 'Success',
-        description: 'Guest deleted successfully'
+        description: 'Booking deleted successfully'
       });
     } catch (err: any) {
       toast({
-        title: 'Error deleting guest',
+        title: 'Error deleting booking',
         description: err.message,
         variant: 'destructive'
       });
@@ -127,16 +131,16 @@ export function useGuests() {
   }, []);
 
   useEffect(() => {
-    fetchGuests();
-  }, [fetchGuests]);
+    fetchBookings();
+  }, [fetchBookings]);
 
   return {
-    guests,
+    bookings,
     loading,
     error,
-    refetch: fetchGuests,
-    createGuest,
-    updateGuest,
-    deleteGuest
+    refetch: fetchBookings,
+    createBooking,
+    updateBooking,
+    deleteBooking
   };
 }

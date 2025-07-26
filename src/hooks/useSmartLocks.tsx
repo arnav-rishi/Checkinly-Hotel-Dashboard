@@ -55,9 +55,17 @@ export const useSmartLocks = () => {
   const createSmartLock = async (lockData: Omit<SmartLock, 'id' | 'created_at' | 'updated_at' | 'hotel_id' | 'created_by'>) => {
     setCreating(true);
     try {
+      // Get user's hotel_id from their profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('hotel_id')
+        .single();
+
+      if (profileError) throw profileError;
+
       const { data, error } = await supabase
         .from('smart_locks')
-        .insert([lockData])
+        .insert([{ ...lockData, hotel_id: profile.hotel_id }])
         .select()
         .single();
 

@@ -12,6 +12,7 @@ export interface Payment {
   transaction_id?: string;
   created_at: string;
   paid_at?: string;
+  created_by: string;
 }
 
 export const usePayments = () => {
@@ -43,7 +44,7 @@ export const usePayments = () => {
     }
   };
 
-  const createPayment = async (paymentData: Omit<Payment, 'id' | 'created_at'>) => {
+  const createPayment = async (paymentData: Omit<Payment, 'id' | 'created_at' | 'created_by'>) => {
     setCreating(true);
     try {
       const { data, error } = await supabase
