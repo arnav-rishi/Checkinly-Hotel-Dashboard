@@ -15,27 +15,27 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
-export interface GuestFilters {
+export interface GuestFilterOptions {
   country?: string;
   city?: string;
-  idType?: string;
+  id_type?: string;
   dateFrom?: string;
   dateTo?: string;
 }
 
 interface GuestFiltersProps {
-  filters: GuestFilters;
-  onFiltersChange: (filters: GuestFilters) => void;
+  filters: GuestFilterOptions;
+  onFiltersChange: (filters: GuestFilterOptions) => void;
   onClearFilters: () => void;
 }
 
-export const GuestFiltersDialog: React.FC<GuestFiltersProps> = ({
+export const GuestFilters: React.FC<GuestFiltersProps> = ({
   filters,
   onFiltersChange,
   onClearFilters
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [tempFilters, setTempFilters] = useState<GuestFilters>(filters);
+  const [tempFilters, setTempFilters] = useState<GuestFilterOptions>(filters);
 
   const handleApplyFilters = () => {
     onFiltersChange(tempFilters);
@@ -96,10 +96,10 @@ export const GuestFiltersDialog: React.FC<GuestFiltersProps> = ({
           <div className="space-y-2">
             <Label htmlFor="idType">ID Type</Label>
             <Select 
-              value={tempFilters.idType || 'all'} 
+              value={tempFilters.id_type || 'all'} 
               onValueChange={(value) => setTempFilters(prev => ({ 
                 ...prev, 
-                idType: value === 'all' ? undefined : value 
+                id_type: value === 'all' ? undefined : value 
               }))}
             >
               <SelectTrigger>
