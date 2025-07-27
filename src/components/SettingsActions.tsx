@@ -10,45 +10,33 @@ import { useUIActions } from '@/hooks/useUIActions';
 import { Loader2, Save } from 'lucide-react';
 
 export const SettingsActions = () => {
-  const { settings, loading, updateSettings } = useSettings();
+  const { loading, saving, saveHotelSettings, loadHotelSettings } = useSettings();
   const { executeAction } = useUIActions();
   const [formData, setFormData] = useState({
-    hotelName: '',
-    hotelAddress: '',
+    name: '',
+    address: '',
     email: '',
     phone: '',
-    currency: 'USD',
-    timezone: 'UTC',
-    checkInTime: '15:00',
-    checkOutTime: '11:00'
+    timezone: 'UTC-5 (Eastern)'
   });
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (settings) {
-      setFormData({
-        hotelName: settings.hotelName || '',
-        hotelAddress: settings.hotelAddress || '',
-        email: settings.email || '',
-        phone: settings.phone || '',
-        currency: settings.currency || 'USD',
-        timezone: settings.timezone || 'UTC',
-        checkInTime: settings.checkInTime || '15:00',
-        checkOutTime: settings.checkOutTime || '11:00'
-      });
-    }
-  }, [settings]);
+    const hotelSettings = loadHotelSettings();
+    setFormData({
+      name: hotelSettings.name || '',
+      address: hotelSettings.address || '',
+      email: hotelSettings.email || '',
+      phone: hotelSettings.phone || '',
+      timezone: hotelSettings.timezone || 'UTC-5 (Eastern)'
+    });
+  }, [loadHotelSettings]);
 
   const handleSave = async () => {
-    setIsSaving(true);
-    
     await executeAction(
-      () => updateSettings(formData),
+      () => saveHotelSettings(formData),
       {
         successMessage: 'Settings saved successfully!',
-        errorMessage: 'Failed to save settings. Please try again.',
-        onSuccess: () => setIsSaving(false),
-        onError: () => setIsSaving(false)
+        errorMessage: 'Failed to save settings. Please try again.'
       }
     );
   };
@@ -75,35 +63,33 @@ export const SettingsActions = () => {
           <CardTitle>Hotel Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="hotelName">Hotel Name</Label>
-              <Input
-                id="hotelName"
-                value={formData.hotelName}
-                onChange={(e) => handleInputChange('hotelName', e.target.value)}
-                placeholder="Enter hotel name"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="hotel@example.com"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Hotel Name</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              placeholder="Enter hotel name"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleInputChange('email', e.target.value)}
+              placeholder="hotel@example.com"
+            />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="hotelAddress">Address</Label>
+            <Label htmlFor="address">Address</Label>
             <Input
-              id="hotelAddress"
-              value={formData.hotelAddress}
-              onChange={(e) => handleInputChange('hotelAddress', e.target.value)}
+              id="address"
+              value={formData.address}
+              onChange={(e) => handleInputChange('address', e.target.value)}
               placeholder="Hotel address"
             />
           </div>
@@ -117,83 +103,33 @@ export const SettingsActions = () => {
               placeholder="Phone number"
             />
           </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Operational Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="currency">Currency</Label>
-              <Select
-                value={formData.currency}
-                onValueChange={(value) => handleInputChange('currency', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD ($)</SelectItem>
-                  <SelectItem value="EUR">EUR (€)</SelectItem>
-                  <SelectItem value="GBP">GBP (£)</SelectItem>
-                  <SelectItem value="JPY">JPY (¥)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="timezone">Timezone</Label>
-              <Select
-                value={formData.timezone}
-                onValueChange={(value) => handleInputChange('timezone', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="UTC">UTC</SelectItem>
-                  <SelectItem value="America/New_York">Eastern Time</SelectItem>
-                  <SelectItem value="America/Chicago">Central Time</SelectItem>
-                  <SelectItem value="America/Denver">Mountain Time</SelectItem>
-                  <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
-                  <SelectItem value="Europe/London">London</SelectItem>
-                  <SelectItem value="Europe/Paris">Paris</SelectItem>
-                  <SelectItem value="Asia/Tokyo">Tokyo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="checkInTime">Check-in Time</Label>
-              <Input
-                id="checkInTime"
-                type="time"
-                value={formData.checkInTime}
-                onChange={(e) => handleInputChange('checkInTime', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="checkOutTime">Check-out Time</Label>
-              <Input
-                id="checkOutTime"
-                type="time"
-                value={formData.checkOutTime}
-                onChange={(e) => handleInputChange('checkOutTime', e.target.value)}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="timezone">Timezone</Label>
+            <Select
+              value={formData.timezone}
+              onValueChange={(value) => handleInputChange('timezone', value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="UTC-5 (Eastern)">UTC-5 (Eastern)</SelectItem>
+                <SelectItem value="UTC-6 (Central)">UTC-6 (Central)</SelectItem>
+                <SelectItem value="UTC-7 (Mountain)">UTC-7 (Mountain)</SelectItem>
+                <SelectItem value="UTC-8 (Pacific)">UTC-8 (Pacific)</SelectItem>
+                <SelectItem value="UTC+0 (GMT)">UTC+0 (GMT)</SelectItem>
+                <SelectItem value="UTC+1 (CET)">UTC+1 (CET)</SelectItem>
+                <SelectItem value="UTC+9 (JST)">UTC+9 (JST)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
 
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={isSaving}>
-          {isSaving ? (
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Saving...
