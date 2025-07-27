@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -38,7 +37,7 @@ export function useGuests() {
     }
   }, []);
 
-  const createGuest = useCallback(async (guestData: Omit<Guest, 'id' | 'created_at' | 'updated_at' | 'hotel_id'>) => {
+  const createGuest = useCallback(async (guestData: Omit<Guest, 'id' | 'created_at' | 'updated_at' | 'hotel_id'>, roomId?: string) => {
     if (!user) {
       throw new Error('User must be logged in to create guests');
     }
@@ -61,7 +60,7 @@ export function useGuests() {
       }
 
       // Create the guest with the hotel_id
-      const { data, error } = await supabase
+      const { data: guestResult, error: guestError } = await supabase
         .from('guests')
         .insert([{ 
           ...guestData, 
@@ -70,19 +69,58 @@ export function useGuests() {
         .select()
         .single();
 
-      if (error) {
-        console.error('Insert error:', error);
-        throw error;
+      if (guestError) {
+        console.error('Guest insert error:', guestError);
+        throw guestError;
       }
 
-      if (data) {
-        setGuests(prev => [data, ...prev]);
-        toast({
-          title: 'Success',
-          description: 'Guest created successfully'
-        });
-        return data;
+      // If a room is selected, create a booking for the guest
+      if (roomId && guestResult) {
+        const checkInDate = new Date().toISOString().split('T')[0];
+        const checkOutDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        // Get room details for pricing
+        const { data: roomData, error: roomError } = await supabase
+          .from('rooms')
+          .select('price_per_night')
+          .eq('id', roomId)
+          .single();
+
+        if (roomError) {
+          console.error('Room fetch error:', roomError);
+          // Continue without booking if room fetch fails
+        } else {
+          // Create booking
+          const { error: bookingError } = await supabase
+            .from('bookings')
+            .insert([{
+              guest_id: guestResult.id,
+              room_id: roomId,
+              check_in_date: checkInDate,
+              check_out_date: checkOutDate,
+              total_amount: roomData.price_per_night,
+              status: 'confirmed'
+            }]);
+
+          if (bookingError) {
+            console.error('Booking creation error:', bookingError);
+            // Continue even if booking creation fails
+          } else {
+            // Update room status to occupied
+            await supabase
+              .from('rooms')
+              .update({ status: 'occupied' })
+              .eq('id', roomId);
+          }
+        }
       }
+
+      setGuests(prev => [guestResult, ...prev]);
+      toast({
+        title: 'Success',
+        description: roomId ? 'Guest created and room assigned successfully' : 'Guest created successfully'
+      });
+      return guestResult;
     } catch (err: any) {
       console.error('Create guest error:', err);
       toast({

@@ -2,69 +2,21 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Search, Plus, Mail, Phone, Calendar, Trash2, Edit, Loader2, AlertCircle } from 'lucide-react';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { GuestFiltersDialog, GuestFilters } from '@/components/GuestFilters';
+import { Search, Plus, User, Mail, Phone, MapPin, Calendar, Edit, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { useGuests } from '@/hooks/useGuests';
-
-interface GuestFormData {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  id_number: string;
-  id_type: string;
-  address: string;
-  city: string;
-  country: string;
-  date_of_birth: string;
-}
-
-const initialFormData: GuestFormData = {
-  first_name: '',
-  last_name: '',
-  email: '',
-  phone: '',
-  id_number: '',
-  id_type: '',
-  address: '',
-  city: '',
-  country: '',
-  date_of_birth: ''
-};
+import { GuestFilters, GuestFilterOptions } from '@/components/GuestFilters';
+import { GuestAddModal } from '@/components/GuestAddModal';
+import { useToast } from '@/hooks/use-toast';
 
 export const EnhancedGuests = () => {
-  const { guests, loading, createGuest, updateGuest, deleteGuest } = useGuests();
+  const { guests, loading, deleteGuest } = useGuests();
   const [filteredGuests, setFilteredGuests] = useState(guests);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState<GuestFilters>({});
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingGuest, setEditingGuest] = useState<any>(null);
-  const [formData, setFormData] = useState<GuestFormData>(initialFormData);
-  const [formErrors, setFormErrors] = useState<Partial<GuestFormData>>({});
-  const [submitLoading, setSubmitLoading] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [confirmDialog, setConfirmDialog] = useState<{
-    open: boolean;
-    title: string;
-    description: string;
-    onConfirm: () => void;
-  }>({
-    open: false,
-    title: '',
-    description: '',
-    onConfirm: () => {}
-  });
-
-  useEffect(() => {
-    setFilteredGuests(guests);
-  }, [guests]);
+  const [filters, setFilters] = useState<GuestFilterOptions>({});
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     applyFilters();
@@ -75,47 +27,31 @@ export const EnhancedGuests = () => {
 
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(guest => {
-        const fullName = `${guest.first_name} ${guest.last_name}`.toLowerCase();
-        return fullName.includes(searchTerm.toLowerCase()) ||
-               guest.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               (guest.phone && guest.phone.toLowerCase().includes(searchTerm.toLowerCase()));
-      });
+      filtered = filtered.filter(guest =>
+        guest.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        guest.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        guest.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        guest.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
 
     // Apply additional filters
     if (filters.country) {
-      filtered = filtered.filter(guest => 
-        guest.country?.toLowerCase().includes(filters.country!.toLowerCase())
-      );
+      filtered = filtered.filter(guest => guest.country?.toLowerCase() === filters.country!.toLowerCase());
     }
 
     if (filters.city) {
-      filtered = filtered.filter(guest => 
-        guest.city?.toLowerCase().includes(filters.city!.toLowerCase())
-      );
+      filtered = filtered.filter(guest => guest.city?.toLowerCase() === filters.city!.toLowerCase());
     }
 
-    if (filters.idType) {
-      filtered = filtered.filter(guest => guest.id_type === filters.idType);
-    }
-
-    if (filters.dateFrom) {
-      filtered = filtered.filter(guest => 
-        new Date(guest.created_at) >= new Date(filters.dateFrom!)
-      );
-    }
-
-    if (filters.dateTo) {
-      filtered = filtered.filter(guest => 
-        new Date(guest.created_at) <= new Date(filters.dateTo!)
-      );
+    if (filters.id_type) {
+      filtered = filtered.filter(guest => guest.id_type === filters.id_type);
     }
 
     setFilteredGuests(filtered);
   };
 
-  const handleFiltersChange = (newFilters: GuestFilters) => {
+  const handleFiltersChange = (newFilters: GuestFilterOptions) => {
     setFilters(newFilters);
   };
 
@@ -124,106 +60,27 @@ export const EnhancedGuests = () => {
     setSearchTerm('');
   };
 
-  const validateForm = (): boolean => {
-    const errors: Partial<GuestFormData> = {};
-
-    if (!formData.first_name.trim()) {
-      errors.first_name = 'First name is required';
-    }
-
-    if (!formData.last_name.trim()) {
-      errors.last_name = 'Last name is required';
-    }
-
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Email is invalid';
-    }
-
-    if (!formData.phone.trim()) {
-      errors.phone = 'Phone is required';
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
-    setSubmitLoading(true);
-
-    try {
-      if (editingGuest) {
-        // Update existing guest
-        await updateGuest(editingGuest.id, formData);
-      } else {
-        // Create new guest
-        await createGuest(formData);
+  const handleDeleteGuest = async (guestId: string) => {
+    if (window.confirm('Are you sure you want to delete this guest?')) {
+      try {
+        await deleteGuest(guestId);
+        toast({
+          title: "Success",
+          description: "Guest deleted successfully",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete guest",
+          variant: "destructive",
+        });
       }
-      resetForm();
-    } catch (error) {
-      // Error handling is already done in the useGuests hook
-      console.error('Error submitting guest:', error);
-    } finally {
-      setSubmitLoading(false);
     }
   };
 
-  const handleEdit = (guest: any) => {
-    setEditingGuest(guest);
-    setFormData({
-      first_name: guest.first_name,
-      last_name: guest.last_name,
-      email: guest.email,
-      phone: guest.phone || '',
-      id_number: guest.id_number || '',
-      id_type: guest.id_type || '',
-      address: guest.address || '',
-      city: guest.city || '',
-      country: guest.country || '',
-      date_of_birth: guest.date_of_birth || ''
-    });
-    setFormErrors({});
-    setIsAddDialogOpen(true);
-  };
-
-  const handleDelete = (guest: any) => {
-    setConfirmDialog({
-      open: true,
-      title: 'Delete Guest',
-      description: `Are you sure you want to delete ${guest.first_name} ${guest.last_name}? This action cannot be undone.`,
-      onConfirm: () => confirmDelete(guest.id)
-    });
-  };
-
-  const confirmDelete = async (id: string) => {
-    setDeleteLoading(true);
-    try {
-      await deleteGuest(id);
-      setConfirmDialog(prev => ({ ...prev, open: false }));
-    } catch (error) {
-      // Error handling is already done in the useGuests hook
-      console.error('Error deleting guest:', error);
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
-
-  const resetForm = () => {
-    setFormData(initialFormData);
-    setFormErrors({});
-    setEditingGuest(null);
-    setIsAddDialogOpen(false);
-  };
-
-  const getStatusBadge = () => {
-    return <Badge className="bg-blue-100 text-blue-800">Active</Badge>;
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString();
   };
 
   return (
@@ -232,166 +89,12 @@ export const EnhancedGuests = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Guest Management</h1>
-          <p className="text-muted-foreground">Manage guest information and records</p>
+          <p className="text-muted-foreground">Manage hotel guests and their information</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => {
-              resetForm();
-              setIsAddDialogOpen(true);
-            }}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Guest
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <form onSubmit={handleSubmit}>
-              <DialogHeader>
-                <DialogTitle>{editingGuest ? 'Edit Guest' : 'Add New Guest'}</DialogTitle>
-                <DialogDescription>
-                  {editingGuest ? 'Update guest information' : 'Enter guest details to create a new guest record'}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="first_name">First Name *</Label>
-                    <Input
-                      id="first_name"
-                      value={formData.first_name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, first_name: e.target.value }))}
-                      className={formErrors.first_name ? 'border-red-500' : ''}
-                      disabled={submitLoading}
-                    />
-                    {formErrors.first_name && (
-                      <span className="text-sm text-red-500">{formErrors.first_name}</span>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="last_name">Last Name *</Label>
-                    <Input
-                      id="last_name"
-                      value={formData.last_name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, last_name: e.target.value }))}
-                      className={formErrors.last_name ? 'border-red-500' : ''}
-                      disabled={submitLoading}
-                    />
-                    {formErrors.last_name && (
-                      <span className="text-sm text-red-500">{formErrors.last_name}</span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      className={formErrors.email ? 'border-red-500' : ''}
-                      disabled={submitLoading}
-                    />
-                    {formErrors.email && (
-                      <span className="text-sm text-red-500">{formErrors.email}</span>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone *</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                      className={formErrors.phone ? 'border-red-500' : ''}
-                      disabled={submitLoading}
-                    />
-                    {formErrors.phone && (
-                      <span className="text-sm text-red-500">{formErrors.phone}</span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="id_type">ID Type</Label>
-                    <Select value={formData.id_type} onValueChange={(value) => setFormData(prev => ({ ...prev, id_type: value }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select ID type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="passport">Passport</SelectItem>
-                        <SelectItem value="driver_license">Driver's License</SelectItem>
-                        <SelectItem value="national_id">National ID</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="id_number">ID Number</Label>
-                    <Input
-                      id="id_number"
-                      value={formData.id_number}
-                      onChange={(e) => setFormData(prev => ({ ...prev, id_number: e.target.value }))}
-                      disabled={submitLoading}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Textarea
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                    disabled={submitLoading}
-                    rows={2}
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      value={formData.city}
-                      onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                      disabled={submitLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
-                    <Input
-                      id="country"
-                      value={formData.country}
-                      onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                      disabled={submitLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="date_of_birth">Date of Birth</Label>
-                    <Input
-                      id="date_of_birth"
-                      type="date"
-                      value={formData.date_of_birth}
-                      onChange={(e) => setFormData(prev => ({ ...prev, date_of_birth: e.target.value }))}
-                      disabled={submitLoading}
-                    />
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={resetForm} disabled={submitLoading}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitLoading}>
-                  {submitLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingGuest ? 'Update Guest' : 'Add Guest'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setAddModalOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Guest
+        </Button>
       </div>
 
       {/* Search and Filters */}
@@ -408,7 +111,7 @@ export const EnhancedGuests = () => {
         </div>
         
         <div className="flex gap-2">
-          <GuestFiltersDialog
+          <GuestFilters
             filters={filters}
             onFiltersChange={handleFiltersChange}
             onClearFilters={handleClearFilters}
@@ -442,45 +145,55 @@ export const EnhancedGuests = () => {
             {filteredGuests.map((guest) => (
               <Card key={guest.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-primary-foreground">
-                        {guest.first_name.charAt(0)}{guest.last_name.charAt(0)}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground">
-                        {guest.first_name} {guest.last_name}
-                      </p>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Mail className="w-4 h-4 mr-1" />
-                        <span className="truncate">{guest.email}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{guest.first_name} {guest.last_name}</CardTitle>
+                        <CardDescription className="flex items-center mt-1">
+                          <Mail className="h-3 w-3 mr-1" />
+                          {guest.email}
+                        </CardDescription>
                       </div>
                     </div>
-                    {getStatusBadge()}
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="space-y-2">
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 gap-2 text-sm">
                     {guest.phone && (
-                      <div className="flex items-center text-sm text-muted-foreground">
+                      <div className="flex items-center text-muted-foreground">
                         <Phone className="w-4 h-4 mr-2" />
                         <span>{guest.phone}</span>
                       </div>
                     )}
                     {guest.city && (
-                      <div className="flex items-center text-sm text-muted-foreground">
+                      <div className="flex items-center text-muted-foreground">
+                        <MapPin className="w-4 h-4 mr-2" />
+                        <span>{guest.city}{guest.country && `, ${guest.country}`}</span>
+                      </div>
+                    )}
+                    {guest.date_of_birth && (
+                      <div className="flex items-center text-muted-foreground">
                         <Calendar className="w-4 h-4 mr-2" />
-                        <span>{guest.city}, {guest.country}</span>
+                        <span>DOB: {formatDate(guest.date_of_birth)}</span>
                       </div>
                     )}
                   </div>
-                  
+
+                  {guest.id_type && (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        {guest.id_type}: {guest.id_number || 'N/A'}
+                      </Badge>
+                    </div>
+                  )}
+
                   <div className="flex gap-2 pt-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleEdit(guest)}
                       className="flex-1"
                     >
                       <Edit className="h-3 w-3 mr-1" />
@@ -489,8 +202,8 @@ export const EnhancedGuests = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDelete(guest)}
-                      className="text-destructive hover:text-destructive"
+                      onClick={() => handleDeleteGuest(guest.id)}
+                      className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="h-3 w-3 mr-1" />
                       Delete
@@ -516,16 +229,10 @@ export const EnhancedGuests = () => {
         </>
       )}
 
-      {/* Confirm Delete Dialog */}
-      <ConfirmDialog
-        open={confirmDialog.open}
-        onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))}
-        title={confirmDialog.title}
-        description={confirmDialog.description}
-        onConfirm={confirmDialog.onConfirm}
-        loading={deleteLoading}
-        variant="destructive"
-        confirmText="Delete"
+      {/* Add Guest Modal */}
+      <GuestAddModal
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
       />
     </div>
   );
