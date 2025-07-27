@@ -25,6 +25,7 @@ export function useRooms() {
       
       setRooms(data || []);
     } catch (err: any) {
+      console.error('Error fetching rooms:', err);
       setError(err.message);
       toast({
         title: 'Error loading rooms',
@@ -38,13 +39,30 @@ export function useRooms() {
 
   const createRoom = useCallback(async (room: Omit<Room, 'id' | 'created_at' | 'updated_at' | 'hotel_id' | 'created_by'>) => {
     try {
+      console.log('Creating room with data:', room);
+      
       // Get user's hotel_id from their profile
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('hotel_id')
+        .eq('id', user.id)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        throw new Error('Unable to get user hotel information');
+      }
+
+      if (!profile.hotel_id) {
+        throw new Error('No hotel associated with your account');
+      }
+
+      console.log('User hotel_id:', profile.hotel_id);
 
       const { data, error } = await supabase
         .from('rooms')
@@ -52,21 +70,18 @@ export function useRooms() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Room creation error:', error);
+        throw error;
+      }
 
+      console.log('Room created successfully:', data);
       setRooms(prev => [data, ...prev]);
-      toast({
-        title: 'Success',
-        description: 'Room created successfully'
-      });
       
       return data;
     } catch (err: any) {
-      toast({
-        title: 'Error creating room',
-        description: err.message,
-        variant: 'destructive'
-      });
+      console.error('Error in createRoom:', err);
+      // Re-throw the error so the component can handle it
       throw err;
     }
   }, []);

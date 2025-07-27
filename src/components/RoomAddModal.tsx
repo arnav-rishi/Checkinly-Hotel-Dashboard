@@ -41,7 +41,7 @@ export const RoomAddModal: React.FC<RoomAddModalProps> = ({ isOpen, onClose }) =
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { createRoom } = useRooms();
+  const { createRoom, rooms } = useRooms();
   const { toast } = useToast();
 
   const validateForm = () => {
@@ -49,6 +49,14 @@ export const RoomAddModal: React.FC<RoomAddModalProps> = ({ isOpen, onClose }) =
 
     if (!formData.room_number.trim()) {
       newErrors.room_number = 'Room number is required';
+    } else {
+      // Check for duplicate room numbers
+      const existingRoom = rooms.find(room => 
+        room.room_number.toLowerCase() === formData.room_number.toLowerCase()
+      );
+      if (existingRoom) {
+        newErrors.room_number = 'Room number already exists. Please use a different number.';
+      }
     }
 
     if (!formData.room_type) {
@@ -86,6 +94,7 @@ export const RoomAddModal: React.FC<RoomAddModalProps> = ({ isOpen, onClose }) =
     setIsSubmitting(true);
     
     try {
+      console.log('Submitting room data:', formData);
       await createRoom(formData);
       
       toast({
@@ -103,13 +112,29 @@ export const RoomAddModal: React.FC<RoomAddModalProps> = ({ isOpen, onClose }) =
         amenities: [],
         status: 'available'
       });
+      setErrors({});
       
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding room:', error);
+      
+      let errorMessage = 'Failed to add room. Please try again.';
+      
+      // Handle specific error cases
+      if (error.message) {
+        if (error.message.includes('duplicate key')) {
+          errorMessage = 'Room number already exists. Please use a different number.';
+          setErrors({ room_number: errorMessage });
+        } else if (error.message.includes('hotel_id')) {
+          errorMessage = 'Unable to determine your hotel. Please refresh and try again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: 'Error',
-        description: 'Failed to add room. Please try again.',
+        description: errorMessage,
         variant: 'destructive'
       });
     } finally {
@@ -128,6 +153,17 @@ export const RoomAddModal: React.FC<RoomAddModalProps> = ({ isOpen, onClose }) =
 
   const handleClose = () => {
     if (!isSubmitting) {
+      // Reset form when closing
+      setFormData({
+        room_number: '',
+        room_type: '',
+        floor: 1,
+        capacity: 1,
+        price_per_night: 0,
+        amenities: [],
+        status: 'available'
+      });
+      setErrors({});
       onClose();
     }
   };
@@ -146,9 +182,16 @@ export const RoomAddModal: React.FC<RoomAddModalProps> = ({ isOpen, onClose }) =
               <Input
                 id="room_number"
                 value={formData.room_number}
-                onChange={(e) => setFormData(prev => ({ ...prev, room_number: e.target.value }))}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, room_number: e.target.value }));
+                  // Clear error when user starts typing
+                  if (errors.room_number) {
+                    setErrors(prev => ({ ...prev, room_number: '' }));
+                  }
+                }}
                 placeholder="e.g., 101"
                 disabled={isSubmitting}
+                className={errors.room_number ? 'border-red-500' : ''}
               />
               {errors.room_number && (
                 <p className="text-sm text-destructive">{errors.room_number}</p>
@@ -180,7 +223,7 @@ export const RoomAddModal: React.FC<RoomAddModalProps> = ({ isOpen, onClose }) =
                 onValueChange={(value) => setFormData(prev => ({ ...prev, room_type: value }))}
                 disabled={isSubmitting}
               >
-                <SelectTrigger>
+                <SelectTrigger className={errors.room_type ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Select room type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -224,6 +267,7 @@ export const RoomAddModal: React.FC<RoomAddModalProps> = ({ isOpen, onClose }) =
               onChange={(e) => setFormData(prev => ({ ...prev, price_per_night: parseFloat(e.target.value) || 0 }))}
               placeholder="e.g., 120.00"
               disabled={isSubmitting}
+              className={errors.price_per_night ? 'border-red-500' : ''}
             />
             {errors.price_per_night && (
               <p className="text-sm text-destructive">{errors.price_per_night}</p>
