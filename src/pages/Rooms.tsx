@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +9,7 @@ import { RoomFiltersDialog, RoomFilters } from '@/components/RoomFilters';
 import { RoomViewModal } from '@/components/RoomViewModal';
 import { RoomEditModal } from '@/components/RoomEditModal';
 import { RoomManageModal } from '@/components/RoomManageModal';
+import { RoomAddModal } from '@/components/RoomAddModal';
 import { useToast } from '@/hooks/use-toast';
 
 interface Room {
@@ -34,6 +34,7 @@ export const Rooms = () => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [manageModalOpen, setManageModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -123,6 +124,10 @@ export const Rooms = () => {
     setManageModalOpen(true);
   };
 
+  const handleAddRoom = () => {
+    setAddModalOpen(true);
+  };
+
   const handleSaveRoom = async (roomId: string, updates: Partial<Room>) => {
     try {
       await updateRoom(roomId, updates);
@@ -182,7 +187,7 @@ export const Rooms = () => {
           <h1 className="text-3xl font-bold text-foreground">Room Management</h1>
           <p className="text-muted-foreground">Manage hotel rooms and their availability</p>
         </div>
-        <Button>
+        <Button onClick={handleAddRoom}>
           <Plus className="w-4 h-4 mr-2" />
           Add Room
         </Button>
@@ -357,6 +362,11 @@ export const Rooms = () => {
         }}
         onStatusChange={handleStatusChange}
         onDelete={handleDeleteRoom}
+      />
+
+      <RoomAddModal
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
       />
     </div>
   );
