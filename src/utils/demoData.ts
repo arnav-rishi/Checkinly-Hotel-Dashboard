@@ -126,21 +126,25 @@ export async function seedDemoData({
       .eq('hotel_id', hotelId)
       .order('room_number');
 
-    const existingSet = new Set((existingRooms || []).map(r => r.room_number));
-    console.log('Existing rooms count:', existingSet.size);
+    const hotelSuffix = `-${hotelId.slice(0, 4)}`;
+    // Build a set of existing base room numbers (strip any previously appended suffix)
+    const existingBaseSet = new Set((existingRooms || []).map(r => r.room_number.split('-')[0]));
+    console.log('Existing rooms count:', existingBaseSet.size);
 
     const roomTypes = ['Single', 'Double', 'Suite'];
     const capacities = [1, 2, 3, 4];
     const basePriceByType: Record<string, number> = { Single: 80, Double: 120, Suite: 220 };
-    const newRoomNumbers = uniqueSequentialRoomNumbers(existingSet, roomsCount);
+    const newBaseRoomNumbers = uniqueSequentialRoomNumbers(existingBaseSet, roomsCount);
+    const finalRoomNumbers = newBaseRoomNumbers.map(n => `${n}${hotelSuffix}`);
 
-    console.log('Generating', newRoomNumbers.length, 'new rooms...');
+    console.log('Generating', finalRoomNumbers.length, 'new rooms...');
 
-    const newRooms = newRoomNumbers.map((room_number) => {
+    const newRooms = finalRoomNumbers.map((room_number) => {
       const room_type = randomFrom(roomTypes);
       const capacity = randomFrom(capacities);
       const price_per_night = basePriceByType[room_type] + Math.floor(Math.random() * 60);
-      const floor = parseInt(room_number[0]);
+      const numericPart = room_number.split('-')[0];
+      const floor = parseInt(numericPart[0]);
       return {
         hotel_id: hotelId,
         room_number,
@@ -313,7 +317,7 @@ export async function seedDemoData({
             .insert([{
               hotel_id: hotelId,
               room_id: room.id,
-              lock_id: `LOCK-${Math.floor(100000 + Math.random() * 900000)}`,
+              lock_id: `LOCK-${Math.floor(100000 + Math.random() * 900000)}-${hotelId.slice(0, 4)}`,
               status: Math.random() > 0.3 ? 'locked' : 'unlocked',
               battery_level: 30 + Math.floor(Math.random() * 70),
               signal_strength: 1 + Math.floor(Math.random() * 5),
