@@ -30,9 +30,10 @@ export const SmartLocks = () => {
     return 'text-green-500';
   };
 
-  const isOnline = (lastPing?: string) => {
-    if (!lastPing) return false;
-    const lastSeen = new Date(lastPing);
+  const isOnline = (lastPing?: string, lastHeartbeat?: string) => {
+    const stamp = lastPing || lastHeartbeat;
+    if (!stamp) return true; // assume online when no ping yet (demo data)
+    const lastSeen = new Date(stamp);
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     return lastSeen > fiveMinutesAgo;
   };
@@ -72,9 +73,9 @@ export const SmartLocks = () => {
                 Room {lock.rooms?.room_number || 'N/A'}
               </CardTitle>
               <div className="flex items-center space-x-2">
-                <Badge variant={isOnline(lock.last_ping) ? 'default' : 'secondary'}>
+                <Badge variant={isOnline(lock.last_ping, lock.last_heartbeat) ? 'default' : 'secondary'}>
                   <Activity className="w-3 h-3 mr-1" />
-                  {isOnline(lock.last_ping) ? 'Online' : 'Offline'}
+                  {isOnline(lock.last_ping, lock.last_heartbeat) ? 'Online' : 'Offline'}
                 </Badge>
                 <KeyRound className="h-5 w-5 text-muted-foreground" />
               </div>
@@ -168,7 +169,7 @@ export const SmartLocks = () => {
               <Button
                 variant="outline"
                 onClick={() => handleToggleLock(lock.id, lock.status)}
-                disabled={updating || !isOnline(lock.last_ping)}
+                disabled={updating || !isOnline(lock.last_ping, lock.last_heartbeat)}
                 className="w-full"
               >
                 {updating ? (
