@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettings } from '@/hooks/useSettings';
 import { useUIActions } from '@/hooks/useUIActions';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, Sparkles } from 'lucide-react';
+import { seedDemoData } from '@/utils/demoData';
 
 export const SettingsActions = () => {
   const { loading, saving, saveHotelSettings, loadHotelSettings } = useSettings();
@@ -39,6 +40,23 @@ export const SettingsActions = () => {
         errorMessage: 'Failed to save settings. Please try again.'
       }
     );
+  };
+
+  const [generating, setGenerating] = useState(false);
+
+  const handleGenerateDemoData = async () => {
+    setGenerating(true);
+    try {
+      await executeAction(
+        () => seedDemoData({ roomsCount: 20, guestsCount: 30, locksCount: 10 }),
+        {
+          successMessage: 'Demo data generated!',
+          errorMessage: 'Failed to generate demo data.'
+        }
+      );
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -124,6 +142,30 @@ export const SettingsActions = () => {
               </SelectContent>
             </Select>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Demo Data</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Populate your dashboard with sample rooms, guests, bookings, and smart locks for demo purposes.
+          </p>
+          <Button onClick={handleGenerateDemoData} disabled={generating}>
+            {generating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generate Demo Data
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
 
