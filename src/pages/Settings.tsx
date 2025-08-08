@@ -4,23 +4,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettings } from '@/hooks/useSettings';
-import { SettingsActions } from '@/components/SettingsActions';
+import { useUIActions } from '@/hooks/useUIActions';
+import { seedDemoData } from '@/utils/demoData';
 import { 
   Building2, 
   Users, 
   Bell, 
   Shield, 
-  Palette, 
-  Globe, 
   Save,
   RefreshCw,
-  Loader2
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 
 export const Settings = () => {
   const { saving, saveHotelSettings, saveNotificationSettings, loadHotelSettings, loadNotificationSettings } = useSettings();
+  const { executeAction } = useUIActions();
   
   const [notifications, setNotifications] = useState({
     checkIns: true,
@@ -37,6 +39,8 @@ export const Settings = () => {
     email: 'info@grandplaza.com',
     timezone: 'UTC-5 (Eastern)'
   });
+
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     // Load settings on component mount
@@ -74,6 +78,21 @@ export const Settings = () => {
     setHotelInfo(defaultHotelInfo);
   };
 
+  const handleGenerateDemoData = async () => {
+    setGenerating(true);
+    try {
+      await executeAction(
+        () => seedDemoData({ roomsCount: 20, guestsCount: 30, locksCount: 10 }),
+        {
+          successMessage: 'Demo data generated successfully!',
+          errorMessage: 'Failed to generate demo data.'
+        }
+      );
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -98,8 +117,99 @@ export const Settings = () => {
         </Button>
       </div>
 
-      {/* Settings Actions Component - includes hotel settings and demo data */}
-      <SettingsActions />
+      {/* Hotel Information Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="w-5 h-5" />
+            Hotel Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Hotel Name</Label>
+              <Input
+                id="name"
+                value={hotelInfo.name}
+                onChange={(e) => setHotelInfo(prev => ({ ...prev, name: e.target.value }))}
+                disabled={saving}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={hotelInfo.email}
+                onChange={(e) => setHotelInfo(prev => ({ ...prev, email: e.target.value }))}
+                disabled={saving}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                value={hotelInfo.phone}
+                onChange={(e) => setHotelInfo(prev => ({ ...prev, phone: e.target.value }))}
+                disabled={saving}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="timezone">Time Zone</Label>
+              <Select 
+                value={hotelInfo.timezone} 
+                onValueChange={(value) => setHotelInfo(prev => ({ ...prev, timezone: value }))}
+                disabled={saving}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="UTC-5 (Eastern)">UTC-5 (Eastern)</SelectItem>
+                  <SelectItem value="UTC-6 (Central)">UTC-6 (Central)</SelectItem>
+                  <SelectItem value="UTC-7 (Mountain)">UTC-7 (Mountain)</SelectItem>
+                  <SelectItem value="UTC-8 (Pacific)">UTC-8 (Pacific)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="address">Address</Label>
+            <Input
+              id="address"
+              value={hotelInfo.address}
+              onChange={(e) => setHotelInfo(prev => ({ ...prev, address: e.target.value }))}
+              disabled={saving}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Demo Data Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Demo Data</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Populate your dashboard with sample rooms, guests, bookings, and smart locks for demo purposes.
+          </p>
+          <Button onClick={handleGenerateDemoData} disabled={generating}>
+            {generating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generate Demo Data
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Notifications Card */}
       <Card>
