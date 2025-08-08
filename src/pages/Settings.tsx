@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettings } from '@/hooks/useSettings';
+import { SettingsActions } from '@/components/SettingsActions';
 import { 
   Building2, 
   Users, 
@@ -97,6 +98,9 @@ export const Settings = () => {
         </Button>
       </div>
 
+      {/* Settings Actions Component - includes hotel settings and demo data */}
+      <SettingsActions />
+
       {/* Notifications Card */}
       <Card>
         <CardHeader>
@@ -166,71 +170,6 @@ export const Settings = () => {
                 disabled={saving}
               />
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Hotel Information Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="w-5 h-5" />
-            Hotel Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Hotel Name</label>
-              <Input
-                value={hotelInfo.name}
-                onChange={(e) => setHotelInfo(prev => ({ ...prev, name: e.target.value }))}
-                disabled={saving}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email</label>
-              <Input
-                type="email"
-                value={hotelInfo.email}
-                onChange={(e) => setHotelInfo(prev => ({ ...prev, email: e.target.value }))}
-                disabled={saving}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Phone</label>
-              <Input
-                value={hotelInfo.phone}
-                onChange={(e) => setHotelInfo(prev => ({ ...prev, phone: e.target.value }))}
-                disabled={saving}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Time Zone</label>
-              <Select 
-                value={hotelInfo.timezone} 
-                onValueChange={(value) => setHotelInfo(prev => ({ ...prev, timezone: value }))}
-                disabled={saving}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="UTC-5 (Eastern)">UTC-5 (Eastern)</SelectItem>
-                  <SelectItem value="UTC-6 (Central)">UTC-6 (Central)</SelectItem>
-                  <SelectItem value="UTC-7 (Mountain)">UTC-7 (Mountain)</SelectItem>
-                  <SelectItem value="UTC-8 (Pacific)">UTC-8 (Pacific)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Address</label>
-            <Input
-              value={hotelInfo.address}
-              onChange={(e) => setHotelInfo(prev => ({ ...prev, address: e.target.value }))}
-              disabled={saving}
-            />
           </div>
         </CardContent>
       </Card>
