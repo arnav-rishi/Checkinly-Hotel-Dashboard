@@ -8,7 +8,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Search, Filter, Download, DollarSign, CreditCard, Receipt, TrendingUp } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 import { supabase } from '@/integrations/supabase/client';
-
 interface Payment {
   id: string;
   amount: number;
@@ -28,14 +27,12 @@ interface Payment {
     };
   };
 }
-
 interface PaymentStats {
   totalRevenue: number;
   pendingPayments: number;
   failedTransactions: number;
   successRate: number;
 }
-
 export const Payments = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,53 +44,42 @@ export const Payments = () => {
     failedTransactions: 0,
     successRate: 0
   });
-
-  const { execute: fetchPayments, loading: fetchLoading } = useApi();
-
+  const {
+    execute: fetchPayments,
+    loading: fetchLoading
+  } = useApi();
   useEffect(() => {
     loadPayments();
   }, []);
-
   const loadPayments = async () => {
     const result = await fetchPayments(async () => {
-      const { data, error } = await supabase
-        .from('payments')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('payments').select(`
           *,
           booking:bookings(
             id,
             guest:guests(first_name, last_name),
             room:rooms(room_number)
           )
-        `)
-        .order('created_at', { ascending: false });
-      
+        `).order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
       return data;
     });
-
     if (result) {
       setPayments(result);
       calculateStats(result);
     }
   };
-
   const calculateStats = (paymentsData: Payment[]) => {
-    const totalRevenue = paymentsData
-      .filter(p => p.payment_status === 'completed')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-    
-    const pendingPayments = paymentsData
-      .filter(p => p.payment_status === 'pending')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-    
-    const failedTransactions = paymentsData
-      .filter(p => p.payment_status === 'failed')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-    
+    const totalRevenue = paymentsData.filter(p => p.payment_status === 'completed').reduce((sum, p) => sum + Number(p.amount), 0);
+    const pendingPayments = paymentsData.filter(p => p.payment_status === 'pending').reduce((sum, p) => sum + Number(p.amount), 0);
+    const failedTransactions = paymentsData.filter(p => p.payment_status === 'failed').reduce((sum, p) => sum + Number(p.amount), 0);
     const completedCount = paymentsData.filter(p => p.payment_status === 'completed').length;
-    const successRate = paymentsData.length > 0 ? (completedCount / paymentsData.length) * 100 : 0;
-
+    const successRate = paymentsData.length > 0 ? completedCount / paymentsData.length * 100 : 0;
     setStats({
       totalRevenue,
       pendingPayments,
@@ -101,7 +87,6 @@ export const Payments = () => {
       successRate
     });
   };
-
   const getStatusBadge = (status: string) => {
     const statusColors = {
       completed: 'bg-green-100 text-green-800',
@@ -111,7 +96,6 @@ export const Payments = () => {
     };
     return statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800';
   };
-
   const getPaymentMethodIcon = (method: string) => {
     switch (method.toLowerCase()) {
       case 'credit card':
@@ -122,31 +106,23 @@ export const Payments = () => {
         return <Receipt className="w-4 h-4" />;
     }
   };
-
   const filteredPayments = payments.filter(payment => {
     const guestName = `${payment.booking?.guest?.first_name} ${payment.booking?.guest?.last_name}`.toLowerCase();
     const roomNumber = payment.booking?.room?.room_number?.toLowerCase() || '';
     const transactionId = payment.transaction_id?.toLowerCase() || '';
-    
-    const matchesSearch = guestName.includes(searchTerm.toLowerCase()) ||
-                         roomNumber.includes(searchTerm.toLowerCase()) ||
-                         transactionId.includes(searchTerm.toLowerCase());
-    
+    const matchesSearch = guestName.includes(searchTerm.toLowerCase()) || roomNumber.includes(searchTerm.toLowerCase()) || transactionId.includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || payment.payment_status === statusFilter;
     const matchesMethod = methodFilter === 'all' || payment.payment_method.toLowerCase().includes(methodFilter.toLowerCase());
-    
     return matchesSearch && matchesStatus && matchesMethod;
   });
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Payment Management</h1>
           <p className="text-muted-foreground mt-1">Track and manage all payment transactions</p>
         </div>
-        <Button className="flex items-center gap-2">
+        <Button className="flex items-center gap-2 my-0 py-0 px-[9px] mx-[20px]">
           <Download className="w-4 h-4" />
           Export Report
         </Button>
@@ -224,12 +200,7 @@ export const Payments = () => {
           <div className="flex gap-4 items-center justify-between mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Search transactions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+              <Input placeholder="Search transactions..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
             </div>
             
             <Popover>
@@ -275,14 +246,10 @@ export const Payments = () => {
                     </Select>
                   </div>
                   
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => {
-                      setStatusFilter('all');
-                      setMethodFilter('all');
-                    }}
-                  >
+                  <Button variant="outline" className="w-full" onClick={() => {
+                  setStatusFilter('all');
+                  setMethodFilter('all');
+                }}>
                     Clear Filters
                   </Button>
                 </div>
@@ -291,12 +258,9 @@ export const Payments = () => {
           </div>
 
           {/* Transactions Table */}
-          {fetchLoading ? (
-            <div className="flex items-center justify-center h-32">
+          {fetchLoading ? <div className="flex items-center justify-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
+            </div> : <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
@@ -311,8 +275,7 @@ export const Payments = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredPayments.map((payment) => (
-                    <tr key={payment.id} className="border-b hover:bg-muted/50">
+                  {filteredPayments.map(payment => <tr key={payment.id} className="border-b hover:bg-muted/50">
                       <td className="py-4 px-4 font-mono text-sm">
                         {payment.transaction_id || payment.id.slice(0, 8)}
                       </td>
@@ -347,14 +310,11 @@ export const Payments = () => {
                           View Details
                         </Button>
                       </td>
-                    </tr>
-                  ))}
+                    </tr>)}
                 </tbody>
               </table>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
