@@ -293,23 +293,25 @@ export const Rooms = () => {
                       onClick={() => handleViewRoom(room)}
                       className="flex-1"
                     >
-                      <Eye className="h-3 w-3 mr-1" />
+                      <Eye className="h-4 w-4 mr-1" />
                       View
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEditRoom(room)}
+                      className="flex-1"
                     >
-                      <Edit className="h-3 w-3 mr-1" />
+                      <Edit className="h-4 w-4 mr-1" />
                       Edit
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleManageRoom(room)}
+                      className="flex-1"
                     >
-                      <Settings className="h-3 w-3 mr-1" />
+                      <Settings className="h-4 w-4 mr-1" />
                       Manage
                     </Button>
                   </div>
