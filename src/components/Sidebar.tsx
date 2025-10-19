@@ -14,7 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useHotel } from '@/hooks/useHotel';
 
-const navigation = [
+export const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Rooms', href: '/rooms', icon: Bed },
   { name: 'Guests', href: '/guests', icon: Users },
@@ -30,7 +30,7 @@ export const Sidebar = () => {
   const { hotel } = useHotel();
 
   return (
-    <div className="w-64 bg-background border-r border-border h-full flex flex-col">
+    <div className="hidden md:flex w-64 bg-background border-r border-border h-full flex-col">
       <div className="p-6">
         <h1 className="text-2xl font-bold text-foreground">
           {hotel?.name || 'Hotel Manager'}

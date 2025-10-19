@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Settings, User, ChevronDown, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Search, Settings, User, ChevronDown, Loader2, Menu } from 'lucide-react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import {
@@ -12,17 +12,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from './ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSearch } from '@/contexts/SearchContext';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { NotificationPanel } from './NotificationPanel';
 import { ThemeToggle } from './ThemeToggle';
+import { navigation } from './Sidebar';
+import { cn } from '@/lib/utils';
+import { useHotel } from '@/hooks/useHotel';
 
 export const Header = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { hotel } = useHotel();
   const { searchQuery, setSearchQuery, searchResults, isSearching } = useSearch();
   const [showResults, setShowResults] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   
   useGlobalSearch();
@@ -55,7 +68,47 @@ export const Header = () => {
   }, []);
 
   return (
-    <header className="h-16 bg-background border-b border-border px-6 flex items-center justify-between">
+    <header className="h-16 bg-background border-b border-border px-4 md:px-6 flex items-center justify-between gap-4">
+      {/* Mobile Menu */}
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="md:hidden">
+            <Menu className="h-5 w-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-64 p-0">
+          <SheetHeader className="p-6 border-b">
+            <SheetTitle className="text-left">
+              {hotel?.name || 'Hotel Manager'}
+            </SheetTitle>
+            {hotel?.name && (
+              <p className="text-sm text-muted-foreground text-left mt-1">Management Dashboard</p>
+            )}
+          </SheetHeader>
+          <nav className="flex-1 px-4 py-4 space-y-2">
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    'flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors',
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  )}
+                >
+                  <item.icon className="mr-3 h-5 w-5" />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
+        </SheetContent>
+      </Sheet>
+
       <div className="flex-1 max-w-xl relative" ref={searchRef}>
         <form onSubmit={handleSearch} className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -99,7 +152,7 @@ export const Header = () => {
         )}
       </div>
       
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-2 md:space-x-4">
         <ThemeToggle />
         <NotificationPanel />
 

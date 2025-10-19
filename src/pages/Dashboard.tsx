@@ -124,15 +124,15 @@ export const Dashboard = () => {
   const isLoading = roomsLoading || bookingsLoading || paymentsLoading;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Hotel Management Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Welcome back! Here's what's happening at your properties.</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Hotel Management Dashboard</h1>
+        <p className="text-sm md:text-base text-muted-foreground mt-1">Welcome back! Here's what's happening at your properties.</p>
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
